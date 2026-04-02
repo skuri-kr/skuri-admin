@@ -1,24 +1,15 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Input,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text,
-  useBreakpointValue,
-} from "@chakra-ui/react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { MetricCard } from "@/components/admin/metric-card";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
+import { FormField } from "@/components/admin/form-field";
+import {
+  InlineGroup,
+  PageStack,
+  ResponsiveGrid,
+  SectionStack,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import type {
   ApiResponse,
@@ -30,6 +21,27 @@ import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { formatDateTime } from "@/lib/format/date";
 import { getApiBaseUrl } from "@/lib/env/public-env";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useEffect, useState, useTransition } from "react";
 
 const noticeCategories = [
@@ -49,20 +61,20 @@ const noticeCategories = [
   "비교과",
 ] as const;
 
-function categoryPalette(category: string) {
+function categoryClass(category: string) {
   switch (category) {
     case "학사":
-      return "blue";
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300";
     case "학생":
-      return "orange";
+      return "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-300";
     case "장학/등록/학자금":
-      return "purple";
+      return "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/50 dark:text-violet-300";
     case "공모/행사":
-      return "green";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300";
     case "취업/진로개발/창업":
-      return "teal";
+      return "border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-900 dark:bg-teal-950/50 dark:text-teal-300";
     default:
-      return "gray";
+      return "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300";
   }
 }
 
@@ -82,7 +94,6 @@ export default function NoticesPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncPending, startSyncTransition] = useTransition();
-  const isCompact = useBreakpointValue({ base: true, lg: false }) ?? false;
 
   useEffect(() => {
     if (!user || !isAdminVerified) {
@@ -193,231 +204,174 @@ export default function NoticesPage() {
   }
 
   return (
-    <Stack gap="6">
-      <Stack gap="3">
-        <Text
-          fontSize="xs"
-          fontWeight="700"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="gray.500"
-        >
-          Notice
-        </Text>
-        <Heading size="2xl">학교 공지 운영</Heading>
-        <Text color="gray.600" _dark={{ color: "gray.300" }}>
+    <PageStack>
+      <SectionStack className="gap-3">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Notice
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">학교 공지 운영</h1>
+        </div>
+        <p className="text-sm text-muted-foreground">
           공지 목록 조회와 RSS 동기화 실행을 Spring 계약에 맞춰 연결했습니다.
           카테고리 목록은 백엔드 NoticeCategory enum 기준으로 고정합니다.
-        </Text>
-      </Stack>
+        </p>
+      </SectionStack>
 
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              전체 공지 수
-            </Text>
-            <Heading size="xl">{pageData.totalElements}</Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 {pageData.page + 1} / {Math.max(pageData.totalPages, 1)}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              읽지 않은 항목
-            </Text>
-            <Heading size="xl">
-              {pageData.content.filter((notice) => !notice.isRead).length}
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 기준
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              마지막 동기화
-            </Text>
-            <Heading size="md">
-              {syncResult ? formatDateTime(syncResult.syncedAt) : "아직 실행 전"}
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              created {syncResult?.created ?? 0} / updated {syncResult?.updated ?? 0}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-      </SimpleGrid>
+      <ResponsiveGrid>
+        <MetricCard
+          label="전체 공지 수"
+          value={pageData.totalElements}
+          description={`현재 페이지 ${pageData.page + 1} / ${Math.max(pageData.totalPages, 1)}`}
+        />
+        <MetricCard
+          label="읽지 않은 항목"
+          value={pageData.content.filter((notice) => !notice.isRead).length}
+          description="현재 페이지 기준"
+        />
+        <MetricCard
+          label="마지막 동기화"
+          value={syncResult ? formatDateTime(syncResult.syncedAt) : "아직 실행 전"}
+          description={`created ${syncResult?.created ?? 0} / updated ${syncResult?.updated ?? 0}`}
+        />
+      </ResponsiveGrid>
 
-      <Card.Root>
-        <Card.Body gap="5">
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
-            gap="4"
-          >
-            <Field.Root>
-              <Field.Label>카테고리</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                >
-                  <option value="">전체 카테고리</option>
+      <Card>
+        <CardContent className="space-y-5 pt-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <FormField label="카테고리">
+              <Select value={category || "__all__"} onValueChange={(value) => setCategory(value === "__all__" ? "" : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="전체 카테고리" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">전체 카테고리</SelectItem>
                   {noticeCategories.map((item) => (
-                    <option key={item} value={item}>
+                    <SelectItem key={item} value={item}>
                       {item}
-                    </option>
+                    </SelectItem>
                   ))}
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-            </Field.Root>
+                </SelectContent>
+              </Select>
+            </FormField>
 
-            <Field.Root>
-              <Field.Label>검색어</Field.Label>
+            <FormField label="검색어">
               <Input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder="제목 또는 요약 검색"
               />
-            </Field.Root>
+            </FormField>
 
-            <Field.Root>
-              <Field.Label>운영 액션</Field.Label>
-              <HStack align="stretch">
-                <Button colorPalette="orange" onClick={handleApplyFilters} flex="1">
+            <FormField label="운영 액션">
+              <InlineGroup className="items-stretch">
+                <Button onClick={handleApplyFilters} className="flex-1">
                   필터 적용
                 </Button>
-                <Button variant="outline" onClick={handleResetFilters} flex="1">
+                <Button variant="outline" onClick={handleResetFilters} className="flex-1">
                   초기화
                 </Button>
-              </HStack>
-            </Field.Root>
-          </Grid>
+              </InlineGroup>
+            </FormField>
+          </div>
 
-          <HStack justify="space-between" wrap="wrap" gap="3">
-            <Text fontSize="sm" color="gray.500">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-muted-foreground">
               현재 조건: {appliedCategory || "전체"} /{" "}
               {appliedSearchText.trim() || "검색어 없음"}
-            </Text>
-            <Button
-              colorPalette="teal"
-              onClick={handleSync}
-              loading={isSyncPending}
-            >
-              학교 공지 동기화 실행
+            </p>
+            <Button onClick={handleSync} disabled={isSyncPending}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {isSyncPending ? "동기화 중..." : "학교 공지 동기화 실행"}
             </Button>
-          </HStack>
+          </div>
 
           {syncMessage ? (
-            <Alert.Root status="success" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>동기화 완료</Alert.Title>
-                <Alert.Description>{syncMessage}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
+            <Alert>
+              <RefreshCw className="h-4 w-4" />
+              <AlertTitle>동기화 완료</AlertTitle>
+              <AlertDescription>{syncMessage}</AlertDescription>
+            </Alert>
           ) : null}
 
           {syncError ? (
-            <Alert.Root status="error" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>동기화 실패</Alert.Title>
-                <Alert.Description>{syncError}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>동기화 실패</AlertTitle>
+              <AlertDescription>{syncError}</AlertDescription>
+            </Alert>
           ) : null}
-        </Card.Body>
-      </Card.Root>
+        </CardContent>
+      </Card>
 
-      <Card.Root>
-        <Card.Body gap="4">
-          <Box overflowX="auto">
-            <Table.Root size="sm">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeader>공지</Table.ColumnHeader>
-                  {!isCompact ? <Table.ColumnHeader>게시처</Table.ColumnHeader> : null}
-                  <Table.ColumnHeader>게시일</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="end">반응</Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>공지</TableHead>
+                  <TableHead className="hidden lg:table-cell">게시처</TableHead>
+                  <TableHead>게시일</TableHead>
+                  <TableHead className="text-right">반응</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {pageData.content.map((notice) => (
-                  <Table.Row key={notice.id}>
-                    <Table.Cell>
-                      <Stack gap="2" minW={0} maxW="30vw">
-                        <HStack gap="1" wrap="wrap">
-                          <Badge colorPalette={categoryPalette(notice.category)}>
+                  <TableRow key={notice.id}>
+                    <TableCell>
+                      <div className="min-w-0 max-w-[30vw] space-y-2">
+                        <InlineGroup className="gap-2">
+                          <Badge className={categoryClass(notice.category)}>
                             {notice.category}
                           </Badge>
                           {notice.isBookmarked ? (
-                            <Badge variant="outline" colorPalette="yellow">
-                              북마크됨
-                            </Badge>
+                            <Badge variant="outline">북마크됨</Badge>
                           ) : null}
                           {!notice.isRead ? (
-                            <Badge variant="subtle" colorPalette="red">
-                              미확인
-                            </Badge>
+                            <Badge variant="destructive">미확인</Badge>
                           ) : null}
-                        </HStack>
-                        <Text fontWeight="600">{notice.title}</Text>
-                        <Text
-                          fontSize="sm"
-                          color="gray.500"
-                          lineClamp={2}
-                          _dark={{ color: "gray.400" }}
-                        >
+                        </InlineGroup>
+                        <p className="font-medium">{notice.title}</p>
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
                           {notice.rssPreview || "요약 미리보기가 없습니다."}
-                        </Text>
-                      </Stack>
-                    </Table.Cell>
-                    {!isCompact ? (
-                      <Table.Cell>
-                        <Stack gap="1">
-                          <Text>{notice.department || "-"}</Text>
-                          <Text fontSize="sm" color="gray.500">
-                            {notice.author || "-"}
-                          </Text>
-                        </Stack>
-                      </Table.Cell>
-                    ) : null}
-                    <Table.Cell>{formatDateTime(notice.postedAt)}</Table.Cell>
-                    <Table.Cell textAlign="end">
-                      <Text fontSize="sm" color="gray.500">
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <div className="space-y-1">
+                        <p>{notice.department || "-"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {notice.author || "-"}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDateTime(notice.postedAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <p className="text-sm text-muted-foreground">
                         조회 {notice.viewCount}
-                      </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      </p>
+                      <p className="text-sm text-muted-foreground">
                         댓글 {notice.commentCount} / 북마크 {notice.bookmarkCount}
-                      </Text>
-                    </Table.Cell>
-                  </Table.Row>
+                      </p>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </Table.Body>
-            </Table.Root>
-          </Box>
+              </TableBody>
+            </Table>
+          </div>
 
           {!pageData.content.length ? (
-            <Box
-              rounded="2xl"
-              borderWidth="1px"
-              borderStyle="dashed"
-              borderColor="blackAlpha.200"
-              p="8"
-              textAlign="center"
-            >
-              <Text>조건에 맞는 학교 공지가 없습니다.</Text>
-            </Box>
+            <div className="rounded-2xl border border-dashed p-8 text-center">
+              <p>조건에 맞는 학교 공지가 없습니다.</p>
+            </div>
           ) : null}
 
-          <HStack justify="space-between" wrap="wrap" gap="3">
-            <Text fontSize="sm" color="gray.500">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-muted-foreground">
               페이지당 {pageData.size}건 표시
-            </Text>
-            <HStack>
+            </p>
+            <InlineGroup>
               <Button
                 variant="outline"
                 onClick={() => setPage((current) => Math.max(current - 1, 0))}
@@ -425,9 +379,9 @@ export default function NoticesPage() {
               >
                 이전
               </Button>
-              <Text fontSize="sm" minW="96px" textAlign="center">
+              <p className="min-w-24 text-center text-sm">
                 {pageData.page + 1} / {Math.max(pageData.totalPages, 1)}
-              </Text>
+              </p>
               <Button
                 variant="outline"
                 onClick={() => setPage((current) => current + 1)}
@@ -435,10 +389,10 @@ export default function NoticesPage() {
               >
                 다음
               </Button>
-            </HStack>
-          </HStack>
-        </Card.Body>
-      </Card.Root>
-    </Stack>
+            </InlineGroup>
+          </div>
+        </CardContent>
+      </Card>
+    </PageStack>
   );
 }

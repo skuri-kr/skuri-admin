@@ -1,28 +1,47 @@
 "use client";
 
+import { AlertCircle, CheckCircle2, TriangleAlert } from "lucide-react";
+import { FormField } from "@/components/admin/form-field";
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Input,
-  Stack,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+  InlineGroup,
+  PageStack,
+  SectionStack,
+  TwoColumnGrid,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { ApiResponse, CafeteriaMenu } from "@/features/admin/types";
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 type RestaurantKey = "rollNoodles" | "theBab" | "fryRice";
+
+interface CafeteriaBadgeInput {
+  code: string;
+  label: string;
+}
+
+interface CafeteriaMenuEntryInput {
+  title: string;
+  badges: CafeteriaBadgeInput[];
+}
 
 interface CafeteriaFormState {
   weekId: string;
@@ -55,6 +74,10 @@ const restaurantFields: Array<{
     placeholder: "예)\n로제크림카레\n케네디소시지로제크림카레\n왕새우튀김로제크림카레",
   },
 ];
+
+const TAKEOUT_BADGE_CODE = "TAKEOUT";
+const TAKEOUT_BADGE_LABEL = "테이크아웃";
+const TAKEOUT_SUFFIX = "ⓣ";
 
 function getDefaultCafeteriaWeekId(date = new Date()) {
   const baseDate = new Date(date);
@@ -124,6 +147,43 @@ function parseMenuLines(value: string) {
     .filter(Boolean);
 }
 
+function hasTakeoutBadge(badges: CafeteriaBadgeInput[] | undefined) {
+  return (badges ?? []).some(
+    (badge) =>
+      badge.code.trim().toUpperCase() === TAKEOUT_BADGE_CODE ||
+      badge.label.trim() === TAKEOUT_BADGE_LABEL,
+  );
+}
+
+function parseMenuLine(value: string): CafeteriaMenuEntryInput | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const isTakeout = trimmed.endsWith(TAKEOUT_SUFFIX);
+  const title = isTakeout ? trimmed.slice(0, -TAKEOUT_SUFFIX.length).trim() : trimmed;
+  if (!title) {
+    return null;
+  }
+
+  return {
+    title,
+    badges: isTakeout
+      ? [
+          {
+            code: TAKEOUT_BADGE_CODE,
+            label: TAKEOUT_BADGE_LABEL,
+          },
+        ]
+      : [],
+  };
+}
+
+function formatMenuEntry(entry: CafeteriaMenuEntryInput) {
+  return `${entry.title}${hasTakeoutBadge(entry.badges) ? TAKEOUT_SUFFIX : ""}`;
+}
+
 function formatMenuLines(items: string[] | undefined) {
   return (items ?? []).join("\n");
 }
@@ -141,11 +201,22 @@ function buildDateRange(startDate: string, endDate: string) {
   return dates;
 }
 
-function buildMenusFromForm(form: CafeteriaFormState) {
+function buildMenuPayloadFromForm(form: CafeteriaFormState) {
+  const restaurantEntries: Record<RestaurantKey, CafeteriaMenuEntryInput[]> = {
+    rollNoodles: parseMenuLines(form.rollNoodlesText)
+      .map(parseMenuLine)
+      .filter((entry): entry is CafeteriaMenuEntryInput => entry !== null),
+    theBab: parseMenuLines(form.theBabText)
+      .map(parseMenuLine)
+      .filter((entry): entry is CafeteriaMenuEntryInput => entry !== null),
+    fryRice: parseMenuLines(form.fryRiceText)
+      .map(parseMenuLine)
+      .filter((entry): entry is CafeteriaMenuEntryInput => entry !== null),
+  };
   const restaurantMenus: Record<RestaurantKey, string[]> = {
-    rollNoodles: parseMenuLines(form.rollNoodlesText),
-    theBab: parseMenuLines(form.theBabText),
-    fryRice: parseMenuLines(form.fryRiceText),
+    rollNoodles: restaurantEntries.rollNoodles.map((entry) => entry.title),
+    theBab: restaurantEntries.theBab.map((entry) => entry.title),
+    fryRice: restaurantEntries.fryRice.map((entry) => entry.title),
   };
   const dates = buildDateRange(form.weekStart, form.weekEnd);
 
@@ -153,19 +224,69 @@ function buildMenusFromForm(form: CafeteriaFormState) {
     throw new Error("weekStart와 weekEnd 기준 날짜 범위를 만들 수 없습니다.");
   }
 
-  return Object.fromEntries(
-    dates.map((date) => [date, restaurantMenus]),
-  ) as Record<string, Record<string, string[]>>;
+  return {
+    menus: Object.fromEntries(
+      dates.map((date) => [
+        date,
+        {
+          rollNoodles: [...restaurantMenus.rollNoodles],
+          theBab: [...restaurantMenus.theBab],
+          fryRice: [...restaurantMenus.fryRice],
+        },
+      ]),
+    ) as Record<string, Record<string, string[]>>,
+    menuEntries: Object.fromEntries(
+      dates.map((date) => [
+        date,
+        {
+          rollNoodles: restaurantEntries.rollNoodles.map((entry) => ({
+            title: entry.title,
+            badges: entry.badges.map((badge) => ({ ...badge })),
+          })),
+          theBab: restaurantEntries.theBab.map((entry) => ({
+            title: entry.title,
+            badges: entry.badges.map((badge) => ({ ...badge })),
+          })),
+          fryRice: restaurantEntries.fryRice.map((entry) => ({
+            title: entry.title,
+            badges: entry.badges.map((badge) => ({ ...badge })),
+          })),
+        },
+      ]),
+    ) as Record<string, Record<string, CafeteriaMenuEntryInput[]>>,
+  };
+}
+
+function getRepresentativeEntriesForDate(
+  menu: CafeteriaMenu,
+  date: string,
+  key: RestaurantKey,
+) {
+  const entries = menu.menuEntries?.[date]?.[key];
+  if (entries && entries.length > 0) {
+    return entries.map((entry) => ({
+      title: entry.title,
+      badges: (entry.badges ?? []).map((badge) => ({
+        code: badge.code,
+        label: badge.label,
+      })),
+    }));
+  }
+
+  return (menu.menus[date]?.[key] ?? []).map((title) => ({
+    title,
+    badges: [] as CafeteriaBadgeInput[],
+  }));
 }
 
 function buildRepresentativeRestaurants(menu: CafeteriaMenu) {
   const dates = Object.keys(menu.menus).sort();
-  const firstRestaurants = menu.menus[dates[0] ?? ""] ?? {};
+  const firstDate = dates[0] ?? "";
 
   return {
-    rollNoodles: firstRestaurants.rollNoodles ?? [],
-    theBab: firstRestaurants.theBab ?? [],
-    fryRice: firstRestaurants.fryRice ?? [],
+    rollNoodles: getRepresentativeEntriesForDate(menu, firstDate, "rollNoodles"),
+    theBab: getRepresentativeEntriesForDate(menu, firstDate, "theBab"),
+    fryRice: getRepresentativeEntriesForDate(menu, firstDate, "fryRice"),
   };
 }
 
@@ -179,13 +300,11 @@ function areMenusUniform(menu: CafeteriaMenu) {
   const baselineSnapshot = JSON.stringify(baseline);
 
   return dates.every((date) => {
-    const restaurants = menu.menus[date] ?? {};
-
     return (
       JSON.stringify({
-        rollNoodles: restaurants.rollNoodles ?? [],
-        theBab: restaurants.theBab ?? [],
-        fryRice: restaurants.fryRice ?? [],
+        rollNoodles: getRepresentativeEntriesForDate(menu, date, "rollNoodles"),
+        theBab: getRepresentativeEntriesForDate(menu, date, "theBab"),
+        fryRice: getRepresentativeEntriesForDate(menu, date, "fryRice"),
       }) === baselineSnapshot
     );
   });
@@ -198,9 +317,11 @@ function toFormState(menu: CafeteriaMenu): CafeteriaFormState {
     weekId: menu.weekId,
     weekStart: menu.weekStart,
     weekEnd: menu.weekEnd,
-    rollNoodlesText: formatMenuLines(representative.rollNoodles),
-    theBabText: formatMenuLines(representative.theBab),
-    fryRiceText: formatMenuLines(representative.fryRice),
+    rollNoodlesText: formatMenuLines(
+      representative.rollNoodles.map(formatMenuEntry),
+    ),
+    theBabText: formatMenuLines(representative.theBab.map(formatMenuEntry)),
+    fryRiceText: formatMenuLines(representative.fryRice.map(formatMenuEntry)),
   };
 }
 
@@ -219,9 +340,15 @@ function validateForm(form: CafeteriaFormState) {
   }
 
   const totalMenuCount =
-    parseMenuLines(form.rollNoodlesText).length +
-    parseMenuLines(form.theBabText).length +
-    parseMenuLines(form.fryRiceText).length;
+    parseMenuLines(form.rollNoodlesText)
+      .map(parseMenuLine)
+      .filter(Boolean).length +
+    parseMenuLines(form.theBabText)
+      .map(parseMenuLine)
+      .filter(Boolean).length +
+    parseMenuLines(form.fryRiceText)
+      .map(parseMenuLine)
+      .filter(Boolean).length;
 
   if (!totalMenuCount) {
     return "최소 한 개 이상의 메뉴를 입력해주세요.";
@@ -426,7 +553,7 @@ export default function CafeteriaPage() {
         setActionSuccess(null);
 
         try {
-          const menus = buildMenusFromForm(form);
+          const { menus, menuEntries } = buildMenuPayloadFromForm(form);
           const url = isExistingWeek
             ? `${getApiBaseUrl()}/v1/admin/cafeteria-menus/${form.weekId}`
             : `${getApiBaseUrl()}/v1/admin/cafeteria-menus`;
@@ -436,12 +563,14 @@ export default function CafeteriaPage() {
                 weekStart: form.weekStart,
                 weekEnd: form.weekEnd,
                 menus,
+                menuEntries,
               }
             : {
                 weekId: form.weekId.trim().toUpperCase(),
                 weekStart: form.weekStart,
                 weekEnd: form.weekEnd,
                 menus,
+                menuEntries,
               };
 
           const response = await getAuthorizedJson<ApiResponse<CafeteriaMenu>>(
@@ -516,138 +645,134 @@ export default function CafeteriaPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="2">
-        <Heading size="xl">학식 메뉴 관리</Heading>
-        <Text color="fg.muted">
+    <PageStack>
+      <SectionStack className="gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">학식 메뉴 관리</h1>
+        <p className="text-sm text-muted-foreground">
           `rollNoodles`, `theBab`, `fryRice` 3개 식당 메뉴를 줄바꿈 단위로
           입력하면, 저장 시 주차 범위의 각 날짜에 동일한 메뉴가 적용됩니다.
-        </Text>
-      </Stack>
+          메뉴명 뒤에 {TAKEOUT_SUFFIX}를 붙이면 테이크아웃 배지로 저장됩니다.
+        </p>
+      </SectionStack>
 
       {actionError ? (
-        <Alert.Root status="error">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>작업 실패</Alert.Title>
-            <Alert.Description>{actionError}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>작업 실패</AlertTitle>
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {actionSuccess ? (
-        <Alert.Root status="success">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>작업 완료</Alert.Title>
-            <Alert.Description>{actionSuccess}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertTitle>작업 완료</AlertTitle>
+          <AlertDescription>{actionSuccess}</AlertDescription>
+        </Alert>
       ) : null}
 
       {hasNonUniformLoadedMenu ? (
-        <Alert.Root status="warning">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>기존 메뉴가 날짜별로 다릅니다.</Alert.Title>
-            <Alert.Description>
-              현재 편집기는 날짜별 세부 차이를 유지하지 않고, 저장 시 weekStart부터
-              weekEnd까지 모든 날짜에 동일한 메뉴를 덮어씁니다.
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert>
+          <TriangleAlert className="h-4 w-4" />
+          <AlertTitle>기존 메뉴 메타데이터가 날짜별로 다릅니다.</AlertTitle>
+          <AlertDescription>
+            현재 편집기는 날짜별 메뉴명/배지 차이를 유지하지 않고, 저장 시
+            weekStart부터 weekEnd까지 모든 날짜에 동일한 메뉴 구성을
+            덮어씁니다.
+          </AlertDescription>
+        </Alert>
       ) : null}
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">주차 조회</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Stack gap="4">
-            <HStack wrap="wrap">
-              <Badge colorPalette={isExistingWeek ? "green" : "gray"}>
+      <Card>
+        <CardHeader>
+          <CardTitle>주차 조회</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionStack>
+            <InlineGroup>
+              <Badge
+                className={
+                  isExistingWeek
+                    ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+                    : "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300"
+                }
+              >
                 {isExistingWeek ? "저장된 주차" : "신규 생성 모드"}
               </Badge>
-              <Text color="fg.muted" fontSize="sm">
+              <p className="text-sm text-muted-foreground">
                 현재 폼 기준 weekId: {form.weekId || "-"}
-              </Text>
-            </HStack>
+              </p>
+            </InlineGroup>
 
-            <HStack align="end" wrap="wrap">
-              <Field.Root maxW="240px">
-                <Field.Label>weekId</Field.Label>
+            <InlineGroup className="items-end">
+              <FormField label="weekId" className="w-full max-w-60">
                 <Input
                   value={form.weekId}
                   onChange={(event) => updateForm("weekId", event.target.value)}
                   placeholder="2026-W13"
                 />
-              </Field.Root>
-              <HStack>
+              </FormField>
+              <InlineGroup>
                 <Button
-                  loading={isLookupPending}
                   variant="outline"
+                  disabled={isLookupPending}
                   onClick={handleLookup}
                 >
-                  weekId 조회
+                  {isLookupPending ? "조회 중..." : "weekId 조회"}
                 </Button>
                 <Button
-                  loading={isLookupPending}
-                  variant="ghost"
+                  variant="secondary"
+                  disabled={isLookupPending}
                   onClick={handleLoadCurrentWeek}
                 >
-                  현재 주 불러오기
+                  {isLookupPending ? "불러오는 중..." : "현재 주 불러오기"}
                 </Button>
-              </HStack>
-            </HStack>
-          </Stack>
-        </Card.Body>
-      </Card.Root>
+              </InlineGroup>
+            </InlineGroup>
+          </SectionStack>
+        </CardContent>
+      </Card>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">주차 메뉴 편집</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Stack gap="5">
-            <HStack wrap="wrap">
-              <Badge colorPalette="blue">{form.weekId || "weekId 미입력"}</Badge>
-              <Text color="fg.muted" fontSize="sm">
+      <Card>
+        <CardHeader>
+          <CardTitle>주차 메뉴 편집</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionStack className="gap-5">
+            <InlineGroup>
+              <Badge variant="secondary">{form.weekId || "weekId 미입력"}</Badge>
+              <p className="text-sm text-muted-foreground">
                 weekId와 weekStart는 같은 ISO 주차여야 합니다.
-              </Text>
-            </HStack>
+              </p>
+            </InlineGroup>
 
-            <HStack align="start" gap="4" wrap="wrap">
-              <Field.Root maxW="220px">
-                <Field.Label>weekStart</Field.Label>
+            <TwoColumnGrid className="max-w-2xl">
+              <FormField label="weekStart">
                 <Input
                   type="date"
                   value={form.weekStart}
                   onChange={(event) => updateForm("weekStart", event.target.value)}
                 />
-              </Field.Root>
+              </FormField>
 
-              <Field.Root maxW="220px">
-                <Field.Label>weekEnd</Field.Label>
+              <FormField label="weekEnd">
                 <Input
                   type="date"
                   value={form.weekEnd}
                   onChange={(event) => updateForm("weekEnd", event.target.value)}
                 />
-              </Field.Root>
-            </HStack>
+              </FormField>
+            </TwoColumnGrid>
 
-            <Grid
-              templateColumns={{
-                base: "1fr",
-                lg: "repeat(3, minmax(0, 1fr))",
-              }}
-              gap="4"
-            >
+            <div className="grid gap-4 xl:grid-cols-3">
               {restaurantFields.map((field) => (
-                <Field.Root key={field.key}>
-                  <Field.Label>{field.label}</Field.Label>
+                <FormField
+                  key={field.key}
+                  label={field.label}
+                  hint={`한 줄에 메뉴 하나씩 입력합니다. 테이크아웃 메뉴는 뒤에 ${TAKEOUT_SUFFIX}를 붙이세요.`}
+                >
                   <Textarea
-                    minH="360px"
+                    className="min-h-[360px]"
                     value={form[`${field.key}Text`]}
                     onChange={(event) =>
                       updateForm(
@@ -657,73 +782,64 @@ export default function CafeteriaPage() {
                     }
                     placeholder={field.placeholder}
                   />
-                  <Field.HelperText>
-                    한 줄에 메뉴 하나씩 입력합니다.
-                  </Field.HelperText>
-                </Field.Root>
+                </FormField>
               ))}
-            </Grid>
+            </div>
 
-            <Card.Root variant="subtle">
-              <Card.Body gap="2">
-                <Heading size="sm">저장 범위 미리보기</Heading>
-                <Text fontSize="sm" color="fg.muted">
+            <Card className="bg-muted/30">
+              <CardContent className="space-y-2 pt-6">
+                <h2 className="text-sm font-semibold">저장 범위 미리보기</h2>
+                <p className="text-sm text-muted-foreground">
                   입력한 메뉴는 아래 날짜들에 동일하게 저장됩니다.
-                </Text>
-                <HStack wrap="wrap">
+                </p>
+                <InlineGroup>
                   {targetDates.length ? (
                     targetDates.map((date) => (
-                      <Badge key={date} colorPalette="gray">
+                      <Badge key={date} variant="secondary">
                         {date}
                       </Badge>
                     ))
                   ) : (
-                    <Text fontSize="sm" color="fg.muted">
+                    <p className="text-sm text-muted-foreground">
                       weekStart와 weekEnd를 입력하면 저장 대상 날짜를 표시합니다.
-                    </Text>
+                    </p>
                   )}
-                </HStack>
-              </Card.Body>
-            </Card.Root>
+                </InlineGroup>
+              </CardContent>
+            </Card>
 
             {validationError ? (
-              <Alert.Root status="warning">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>저장 전 확인 필요</Alert.Title>
-                  <Alert.Description>{validationError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert>
+                <TriangleAlert className="h-4 w-4" />
+                <AlertTitle>저장 전 확인 필요</AlertTitle>
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
             ) : null}
 
-            <HStack justify="space-between" wrap="wrap">
-              <Text color="fg.muted" fontSize="sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground">
                 현재 계약에는 주차 전체 목록 API가 없어 current/weekId 단건 조회만
                 제공합니다.
-              </Text>
-              <HStack>
+              </p>
+              <InlineGroup>
                 <Button
-                  colorPalette="red"
                   disabled={!isExistingWeek}
-                  loading={isDeletePending}
                   variant="outline"
                   onClick={handleDelete}
                 >
-                  삭제
+                  {isDeletePending ? "삭제 중..." : "삭제"}
                 </Button>
                 <Button
-                  colorPalette="blue"
-                  disabled={Boolean(validationError)}
-                  loading={isSavePending}
+                  disabled={Boolean(validationError) || isSavePending}
                   onClick={handleSave}
                 >
-                  {isExistingWeek ? "저장" : "등록"}
+                  {isSavePending ? "저장 중..." : isExistingWeek ? "저장" : "등록"}
                 </Button>
-              </HStack>
-            </HStack>
-          </Stack>
-        </Card.Body>
-      </Card.Root>
-    </Stack>
+              </InlineGroup>
+            </div>
+          </SectionStack>
+        </CardContent>
+      </Card>
+    </PageStack>
   );
 }

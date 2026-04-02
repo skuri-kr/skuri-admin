@@ -1,31 +1,55 @@
 "use client";
 
+import Image from "next/image";
 import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Image,
-  Input,
-  Link,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+  AlertCircle,
+  BellRing,
+  CheckCircle2,
+} from "lucide-react";
+import { FormField } from "@/components/admin/form-field";
+import {
+  InlineGroup,
+  PageStack,
+  ResponsiveGrid,
+  SectionStack,
+  TwoColumnGrid,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { uploadAuthorizedImage } from "@/lib/api/image-upload";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatDateTime,
   fromDateTimeLocalInputValue,
@@ -57,14 +81,14 @@ interface AppNoticeFormState {
   publishedAt: string;
 }
 
-function priorityPalette(priority: AppNotice["priority"]) {
+function priorityBadgeClass(priority: AppNotice["priority"]) {
   switch (priority) {
     case "HIGH":
-      return "red";
+      return "border border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300";
     case "NORMAL":
-      return "blue";
+      return "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300";
     case "LOW":
-      return "gray";
+      return "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300";
   }
 }
 
@@ -531,131 +555,110 @@ export default function AppNoticesPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="3">
-        <Text
-          fontSize="xs"
-          fontWeight="700"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="gray.500"
-        >
+    <PageStack>
+      <SectionStack className="gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Notice
-        </Text>
-        <Heading size="2xl">앱 공지 관리</Heading>
-        <Text color="gray.600" _dark={{ color: "gray.300" }}>
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight">앱 공지 관리</h1>
+        <p className="text-sm text-muted-foreground">
           앱 공지 생성, 수정, 삭제를 현재 Spring 계약에 맞춰 연결했습니다.
-          이미지 업로드는 별도 URL 입력 방식으로 두고, 관리 화면에서는 목록과
-          unread count를 함께 확인합니다.
-        </Text>
-      </Stack>
+          이미지 업로드와 unread count도 함께 확인합니다.
+        </p>
+      </SectionStack>
 
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              총 공지
-            </Text>
-            <Heading size="xl">{items.length}</Heading>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              읽지 않은 공지
-            </Text>
-            <Heading size="xl">{unreadCount ?? "-"}</Heading>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              최고 우선순위 공지
-            </Text>
-            <Heading size="xl">
+      <ResponsiveGrid>
+        <Card>
+          <CardContent className="space-y-1 pt-6">
+            <p className="text-sm text-muted-foreground">총 공지</p>
+            <p className="text-3xl font-semibold">{items.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-1 pt-6">
+            <p className="text-sm text-muted-foreground">읽지 않은 공지</p>
+            <p className="text-3xl font-semibold">{unreadCount ?? "-"}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="space-y-1 pt-6">
+            <p className="text-sm text-muted-foreground">최고 우선순위 공지</p>
+            <p className="text-3xl font-semibold">
               {items.filter((item) => item.priority === "HIGH").length}
-            </Heading>
-          </Card.Body>
-        </Card.Root>
-      </SimpleGrid>
+            </p>
+          </CardContent>
+        </Card>
+      </ResponsiveGrid>
 
-      <Grid
-        templateColumns={{ base: "1fr", xl: "minmax(0, 1fr) minmax(0, 1fr)" }}
-        gap="5"
-      >
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">앱 공지 생성</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
-            <Field.Root invalid={Boolean(createValidationError && createError)}>
-              <Field.Label>제목</Field.Label>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>앱 공지 생성</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField label="제목">
               <Input
                 value={createForm.title}
                 onChange={(event) => updateCreateForm("title", event.target.value)}
                 placeholder="서버 점검 안내"
               />
-            </Field.Root>
+            </FormField>
 
-            <Field.Root>
-              <Field.Label>본문</Field.Label>
+            <FormField label="본문">
               <Textarea
+                className="max-h-[14lh] min-h-[160px]"
                 value={createForm.content}
-                onChange={(event) =>
-                  updateCreateForm("content", event.target.value)
-                }
+                onChange={(event) => updateCreateForm("content", event.target.value)}
                 placeholder="공지 내용을 입력해주세요."
-                autoresize
-                maxH="14lh"
               />
-            </Field.Root>
+            </FormField>
 
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>카테고리</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={createForm.category}
-                    onChange={(event) =>
-                      updateCreateForm(
-                        "category",
-                        event.target.value as AppNotice["category"],
-                      )
-                    }
-                  >
+            <TwoColumnGrid>
+              <FormField label="카테고리">
+                <Select
+                  value={createForm.category}
+                  onValueChange={(value) =>
+                    updateCreateForm("category", value as AppNotice["category"])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     {appNoticeCategories.map((category) => (
-                      <option key={category} value={category}>
+                      <SelectItem key={category} value={category}>
                         {category}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </NativeSelect.Field>
-                </NativeSelect.Root>
-              </Field.Root>
+                  </SelectContent>
+                </Select>
+              </FormField>
 
-              <Field.Root>
-                <Field.Label>우선순위</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={createForm.priority}
-                    onChange={(event) =>
-                      updateCreateForm(
-                        "priority",
-                        event.target.value as AppNotice["priority"],
-                      )
-                    }
-                  >
+              <FormField label="우선순위">
+                <Select
+                  value={createForm.priority}
+                  onValueChange={(value) =>
+                    updateCreateForm("priority", value as AppNotice["priority"])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
                     {appNoticePriorities.map((priority) => (
-                      <option key={priority} value={priority}>
+                      <SelectItem key={priority} value={priority}>
                         {priority}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </NativeSelect.Field>
-                </NativeSelect.Root>
-              </Field.Root>
-            </Grid>
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </TwoColumnGrid>
 
-            <Field.Root>
-              <Field.Label>공지 이미지 업로드</Field.Label>
+            <FormField
+              label="공지 이미지 업로드"
+              hint={`JPEG, PNG, WebP 업로드를 지원합니다. 현재 ${createImageUrls.length}개 이미지가 등록됩니다.${isCreateImageUploading ? " 업로드 중입니다." : ""}`}
+            >
               <Input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -666,40 +669,32 @@ export default function AppNoticesPage() {
                   void handleCreateImageUpload(files);
                 }}
               />
-              <Field.HelperText>
-                JPEG, PNG, WebP 업로드를 지원합니다. 현재 {createImageUrls.length}
-                개 이미지가 등록됩니다.
-                {isCreateImageUploading ? " 업로드 중입니다." : ""}
-              </Field.HelperText>
-            </Field.Root>
+            </FormField>
 
             {createImageUploadError ? (
-              <Alert.Root status="error" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>이미지 업로드 실패</Alert.Title>
-                  <Alert.Description>{createImageUploadError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>이미지 업로드 실패</AlertTitle>
+                <AlertDescription>{createImageUploadError}</AlertDescription>
+              </Alert>
             ) : null}
 
             {createImageUrls.length ? (
-              <SimpleGrid columns={{ base: 1, md: 2 }} gap="3">
+              <div className="grid gap-3 md:grid-cols-2">
                 {createImageUrls.map((url, index) => (
-                  <Box key={`${url}-${index}`} rounded="xl" borderWidth="1px" p="3">
-                    <Stack gap="3">
-                      <Image
-                        src={url}
-                        alt={`생성할 앱 공지 이미지 ${index + 1}`}
-                        rounded="lg"
-                        h="160px"
-                        w="full"
-                        objectFit="cover"
-                      />
+                  <div key={`${url}-${index}`} className="rounded-xl border p-3">
+                    <SectionStack className="gap-3">
+                      <div className="relative h-40 overflow-hidden rounded-lg">
+                        <Image
+                          src={url}
+                          alt={`생성할 앱 공지 이미지 ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="outline"
-                        colorPalette="red"
                         onClick={() =>
                           setCreateImageUrls(
                             createImageUrls.filter((_, imageIndex) => imageIndex !== index),
@@ -708,155 +703,137 @@ export default function AppNoticesPage() {
                       >
                         제거
                       </Button>
-                    </Stack>
-                  </Box>
+                    </SectionStack>
+                  </div>
                 ))}
-              </SimpleGrid>
+              </div>
             ) : null}
 
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>액션 URL</Field.Label>
+            <TwoColumnGrid>
+              <FormField label="액션 URL">
                 <Input
                   value={createForm.actionUrl}
-                  onChange={(event) =>
-                    updateCreateForm("actionUrl", event.target.value)
-                  }
+                  onChange={(event) => updateCreateForm("actionUrl", event.target.value)}
                   placeholder="https://status.skuri.app"
                 />
-              </Field.Root>
+              </FormField>
 
-              <Field.Root>
-                <Field.Label>게시 시각</Field.Label>
+              <FormField label="게시 시각">
                 <Input
                   type="datetime-local"
                   value={createForm.publishedAt}
-                  onChange={(event) =>
-                    updateCreateForm("publishedAt", event.target.value)
-                  }
+                  onChange={(event) => updateCreateForm("publishedAt", event.target.value)}
                 />
-              </Field.Root>
-            </Grid>
+              </FormField>
+            </TwoColumnGrid>
 
             {createSuccess ? (
-              <Alert.Root status="success" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>생성 완료</Alert.Title>
-                  <Alert.Description>{createSuccess}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>생성 완료</AlertTitle>
+                <AlertDescription>{createSuccess}</AlertDescription>
+              </Alert>
             ) : null}
 
             {createError ? (
-              <Alert.Root status="error" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>생성 실패</Alert.Title>
-                  <Alert.Description>{createError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>생성 실패</AlertTitle>
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
             ) : null}
 
             <Button
-              colorPalette="orange"
               onClick={handleCreate}
-              loading={isCreatePending}
-              disabled={Boolean(createValidationError) || isCreateImageUploading}
+              disabled={Boolean(createValidationError) || isCreatePending || isCreateImageUploading}
             >
-              앱 공지 생성
+              <BellRing className="mr-2 h-4 w-4" />
+              {isCreatePending ? "앱 공지 생성 중..." : "앱 공지 생성"}
             </Button>
-          </Card.Body>
-        </Card.Root>
+          </CardContent>
+        </Card>
 
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">선택 공지 수정</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
+        <Card>
+          <CardHeader>
+            <CardTitle>선택 공지 수정</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {selectedNotice ? (
               <>
-                <HStack justify="space-between" align="start">
-                  <Stack gap="1">
-                    <Text fontSize="sm" color="gray.500">
-                      선택된 공지
-                    </Text>
-                    <Heading size="sm">{selectedNotice.title}</Heading>
-                  </Stack>
-                  <HStack gap="2">
-                    <Badge colorPalette={priorityPalette(selectedNotice.priority)}>
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">선택된 공지</p>
+                    <p className="text-lg font-semibold">{selectedNotice.title}</p>
+                  </div>
+                  <InlineGroup>
+                    <Badge className={priorityBadgeClass(selectedNotice.priority)}>
                       {selectedNotice.priority}
                     </Badge>
                     <Badge variant="outline">{selectedNotice.category}</Badge>
-                  </HStack>
-                </HStack>
+                  </InlineGroup>
+                </div>
 
-                <Field.Root>
-                  <Field.Label>제목</Field.Label>
+                <FormField label="제목">
                   <Input
                     value={editForm.title}
                     onChange={(event) => updateEditForm("title", event.target.value)}
                   />
-                </Field.Root>
+                </FormField>
 
-                <Field.Root>
-                  <Field.Label>본문</Field.Label>
+                <FormField label="본문">
                   <Textarea
+                    className="max-h-[14lh] min-h-[160px]"
                     value={editForm.content}
-                    onChange={(event) =>
-                      updateEditForm("content", event.target.value)
-                    }
-                    autoresize
-                    maxH="14lh"
+                    onChange={(event) => updateEditForm("content", event.target.value)}
                   />
-                </Field.Root>
+                </FormField>
 
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>카테고리</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={editForm.category}
-                        onChange={(event) =>
-                          updateEditForm(
-                            "category",
-                            event.target.value as AppNotice["category"],
-                          )
-                        }
-                      >
+                <TwoColumnGrid>
+                  <FormField label="카테고리">
+                    <Select
+                      value={editForm.category}
+                      onValueChange={(value) =>
+                        updateEditForm("category", value as AppNotice["category"])
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {appNoticeCategories.map((category) => (
-                          <option key={category} value={category}>
+                          <SelectItem key={category} value={category}>
                             {category}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
 
-                  <Field.Root>
-                    <Field.Label>우선순위</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={editForm.priority}
-                        onChange={(event) =>
-                          updateEditForm(
-                            "priority",
-                            event.target.value as AppNotice["priority"],
-                          )
-                        }
-                      >
+                  <FormField label="우선순위">
+                    <Select
+                      value={editForm.priority}
+                      onValueChange={(value) =>
+                        updateEditForm("priority", value as AppNotice["priority"])
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {appNoticePriorities.map((priority) => (
-                          <option key={priority} value={priority}>
+                          <SelectItem key={priority} value={priority}>
                             {priority}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
-                </Grid>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
+                </TwoColumnGrid>
 
-                <Field.Root>
-                  <Field.Label>공지 이미지 업로드</Field.Label>
+                <FormField
+                  label="공지 이미지 업로드"
+                  hint="새 이미지를 업로드하면 기존 목록 뒤에 추가됩니다. 개별 제거도 가능합니다."
+                >
                   <Input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -867,39 +844,32 @@ export default function AppNoticesPage() {
                       void handleEditImageUpload(files);
                     }}
                   />
-                  <Field.HelperText>
-                    새 이미지를 업로드하면 기존 목록 뒤에 추가됩니다. 개별 제거도
-                    가능합니다.
-                  </Field.HelperText>
-                </Field.Root>
+                </FormField>
 
                 {editImageUploadError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>이미지 업로드 실패</Alert.Title>
-                      <Alert.Description>{editImageUploadError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>이미지 업로드 실패</AlertTitle>
+                    <AlertDescription>{editImageUploadError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {selectedNoticeImageUrls.length ? (
-                  <SimpleGrid columns={{ base: 1, md: 2 }} gap="3">
+                  <div className="grid gap-3 md:grid-cols-2">
                     {selectedNoticeImageUrls.map((url, index) => (
-                      <Box key={`${url}-${index}`} rounded="xl" borderWidth="1px" p="3">
-                        <Stack gap="3">
-                          <Image
-                            src={url}
-                            alt={`앱 공지 이미지 ${index + 1}`}
-                            rounded="lg"
-                            h="160px"
-                            w="full"
-                            objectFit="cover"
-                          />
+                      <div key={`${url}-${index}`} className="rounded-xl border p-3">
+                        <SectionStack className="gap-3">
+                          <div className="relative h-40 overflow-hidden rounded-lg">
+                            <Image
+                              src={url}
+                              alt={`앱 공지 이미지 ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
                           <Button
-                            size="xs"
+                            size="sm"
                             variant="outline"
-                            colorPalette="red"
                             onClick={() =>
                               setEditImageUrls(
                                 selectedNoticeImageUrls.filter(
@@ -910,213 +880,177 @@ export default function AppNoticesPage() {
                           >
                             제거
                           </Button>
-                        </Stack>
-                      </Box>
+                        </SectionStack>
+                      </div>
                     ))}
-                  </SimpleGrid>
+                  </div>
                 ) : (
-                  <Text fontSize="sm" color="gray.500">
+                  <p className="text-sm text-muted-foreground">
                     등록된 이미지가 없습니다.
-                  </Text>
+                  </p>
                 )}
 
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>액션 URL</Field.Label>
+                <TwoColumnGrid>
+                  <FormField
+                    label="액션 URL"
+                    hint="PATCH 계약상 비우기는 미지원입니다. 제거가 필요하면 백엔드 확장이 필요합니다."
+                  >
                     <Input
                       value={editForm.actionUrl}
-                      onChange={(event) =>
-                        updateEditForm("actionUrl", event.target.value)
-                      }
+                      onChange={(event) => updateEditForm("actionUrl", event.target.value)}
                     />
-                    <Field.HelperText>
-                      PATCH 계약상 비우기는 미지원입니다. 제거가 필요하면 백엔드
-                      확장이 필요합니다.
-                    </Field.HelperText>
-                  </Field.Root>
+                  </FormField>
 
-                  <Field.Root>
-                    <Field.Label>게시 시각</Field.Label>
+                  <FormField label="게시 시각">
                     <Input
                       type="datetime-local"
                       value={editForm.publishedAt}
-                      onChange={(event) =>
-                        updateEditForm("publishedAt", event.target.value)
-                      }
+                      onChange={(event) => updateEditForm("publishedAt", event.target.value)}
                     />
-                  </Field.Root>
-                </Grid>
+                  </FormField>
+                </TwoColumnGrid>
 
                 {selectedNotice.actionUrl ? (
-                  <Box
-                    rounded="xl"
-                    bg="blackAlpha.50"
-                    p="3"
-                    _dark={{ bg: "whiteAlpha.100" }}
-                  >
-                    <Text fontSize="sm" color="gray.500">
-                      현재 액션 URL
-                    </Text>
-                    <Link href={selectedNotice.actionUrl} target="_blank" rel="noreferrer">
+                  <div className="rounded-xl bg-muted/40 p-3">
+                    <p className="text-sm text-muted-foreground">현재 액션 URL</p>
+                    <a
+                      href={selectedNotice.actionUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-primary underline-offset-4 hover:underline"
+                    >
                       {selectedNotice.actionUrl}
-                    </Link>
-                  </Box>
+                    </a>
+                  </div>
                 ) : null}
 
                 {editSuccess ? (
-                  <Alert.Root status="success" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 완료</Alert.Title>
-                      <Alert.Description>{editSuccess}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertTitle>저장 완료</AlertTitle>
+                    <AlertDescription>{editSuccess}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {editError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 실패</Alert.Title>
-                      <Alert.Description>{editError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>저장 실패</AlertTitle>
+                    <AlertDescription>{editError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {deleteError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>삭제 실패</Alert.Title>
-                      <Alert.Description>{deleteError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>삭제 실패</AlertTitle>
+                    <AlertDescription>{deleteError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
-                <HStack justify="space-between" wrap="wrap" gap="3">
-                  <Text fontSize="sm" color="gray.500">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-muted-foreground">
                     생성일 {formatDateTime(selectedNotice.createdAt)} / 수정일{" "}
                     {formatDateTime(selectedNotice.updatedAt)}
-                  </Text>
-                  <HStack>
+                  </p>
+                  <InlineGroup>
                     <Button
                       variant="outline"
-                      colorPalette="red"
                       onClick={handleDelete}
-                      loading={isDeletePending}
+                      disabled={isDeletePending}
                     >
-                      삭제
+                      {isDeletePending ? "삭제 중..." : "삭제"}
                     </Button>
                     <Button
-                      colorPalette="orange"
                       onClick={handleUpdate}
-                      loading={isEditPending}
                       disabled={
                         !isEditDirty ||
                         Boolean(editValidationError) ||
-                        isEditImageUploading
+                        isEditImageUploading ||
+                        isEditPending
                       }
                     >
-                      저장
+                      {isEditPending ? "저장 중..." : "저장"}
                     </Button>
-                  </HStack>
-                </HStack>
+                  </InlineGroup>
+                </div>
               </>
             ) : (
-              <Box
-                rounded="2xl"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderColor="blackAlpha.200"
-                p="8"
-                textAlign="center"
-              >
-                <Text>수정할 공지를 먼저 선택해주세요.</Text>
-              </Box>
+              <div className="rounded-2xl border border-dashed p-8 text-center">
+                <p>수정할 공지를 먼저 선택해주세요.</p>
+              </div>
             )}
-          </Card.Body>
-        </Card.Root>
-      </Grid>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">공지 목록</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Box overflowX="auto">
-            <Table.Root size="sm">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeader>공지</Table.ColumnHeader>
-                  <Table.ColumnHeader>카테고리</Table.ColumnHeader>
-                  <Table.ColumnHeader>우선순위</Table.ColumnHeader>
-                  <Table.ColumnHeader>이미지</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="end">게시일</Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+      <Card>
+        <CardHeader>
+          <CardTitle>공지 목록</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>공지</TableHead>
+                  <TableHead>카테고리</TableHead>
+                  <TableHead>우선순위</TableHead>
+                  <TableHead>이미지</TableHead>
+                  <TableHead className="text-right">게시일</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((notice) => {
                   const active = notice.id === selectedNotice?.id;
                   return (
-                    <Table.Row
+                    <TableRow
                       key={notice.id}
-                      bg={active ? "orange.50" : undefined}
-                      cursor="pointer"
+                      className={active ? "cursor-pointer bg-muted/40" : "cursor-pointer"}
                       onClick={() => setSelectedNoticeId(notice.id)}
-                      _hover={{ bg: active ? "orange.100" : "blackAlpha.50" }}
-                      _dark={{
-                        bg: active ? "orange.950" : undefined,
-                        _hover: {
-                          bg: active ? "orange.900" : "whiteAlpha.100",
-                        },
-                      }}
                     >
-                      <Table.Cell>
-                        <Stack gap="1">
-                          <Text fontWeight="600">{notice.title}</Text>
-                          <Text
-                            fontSize="sm"
-                            color="gray.500"
-                            lineClamp={2}
-                            _dark={{ color: "gray.400" }}
-                          >
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="font-semibold">{notice.title}</p>
+                          <p className="line-clamp-2 text-sm text-muted-foreground">
                             {notice.content}
-                          </Text>
-                        </Stack>
-                      </Table.Cell>
-                      <Table.Cell>{notice.category}</Table.Cell>
-                      <Table.Cell>
-                        <Badge colorPalette={priorityPalette(notice.priority)}>
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{notice.category}</TableCell>
+                      <TableCell>
+                        <Badge className={priorityBadgeClass(notice.priority)}>
                           {notice.priority}
                         </Badge>
-                      </Table.Cell>
-                      <Table.Cell>
+                      </TableCell>
+                      <TableCell>
                         {notice.imageUrls[0] ? (
-                          <HStack gap="3">
-                            <Image
-                              src={notice.imageUrls[0]}
-                              alt={`${notice.title} 대표 이미지`}
-                              boxSize="12"
-                              rounded="md"
-                              objectFit="cover"
-                            />
-                            <Text>{notice.imageUrls.length}개</Text>
-                          </HStack>
+                          <InlineGroup>
+                            <div className="relative h-12 w-12 overflow-hidden rounded-md">
+                              <Image
+                                src={notice.imageUrls[0]}
+                                alt={`${notice.title} 대표 이미지`}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <p className="text-sm">{notice.imageUrls.length}개</p>
+                          </InlineGroup>
                         ) : (
-                          <Text color="gray.500">없음</Text>
+                          <p className="text-sm text-muted-foreground">없음</p>
                         )}
-                      </Table.Cell>
-                      <Table.Cell textAlign="end">
+                      </TableCell>
+                      <TableCell className="text-right">
                         {formatDateTime(notice.publishedAt)}
-                      </Table.Cell>
-                    </Table.Row>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </Table.Body>
-            </Table.Root>
-          </Box>
-        </Card.Body>
-      </Card.Root>
-    </Stack>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </PageStack>
   );
 }

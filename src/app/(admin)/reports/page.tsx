@@ -1,24 +1,41 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  NativeSelect,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-  Input,
-} from "@chakra-ui/react";
+import { AlertCircle, ShieldAlert } from "lucide-react";
+import { DetailField } from "@/components/admin/detail-field";
+import { MetricCard } from "@/components/admin/metric-card";
 import { useAuth } from "@/features/auth/auth-context";
-import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
+import {
+  PageErrorState,
+  PageLoadingState,
+} from "@/components/admin/page-status";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
@@ -58,16 +75,16 @@ const reportStatusWorkflow: Record<
   REJECTED: ["REJECTED"],
 };
 
-function statusPalette(status: AdminReportStatus) {
+function statusClasses(status: AdminReportStatus) {
   switch (status) {
     case "PENDING":
-      return "orange";
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300";
     case "REVIEWING":
-      return "blue";
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300";
     case "ACTIONED":
-      return "green";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300";
     case "REJECTED":
-      return "red";
+      return "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300";
   }
 }
 
@@ -90,7 +107,7 @@ export default function ReportsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const [isSavePending, startSaveTransition] = useTransition();
+  const [, startSaveTransition] = useTransition();
   const previousSelectedReportIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -121,11 +138,11 @@ export default function ReportsPage() {
           query.set("targetType", selectedTargetType);
         }
 
-        const response = await getAuthorizedJson<
-          ApiResponse<PageResponse<AdminReport>>
-        >(user, `${getApiBaseUrl()}/v1/admin/reports?${query.toString()}`, {
-          signal: controller.signal,
-        });
+        const response = await getAuthorizedJson<ApiResponse<PageResponse<AdminReport>>>(
+          user,
+          `${getApiBaseUrl()}/v1/admin/reports?${query.toString()}`,
+          { signal: controller.signal },
+        );
 
         setPageData(response.data);
       } catch (caughtError) {
@@ -282,139 +299,119 @@ export default function ReportsPage() {
     : (["PENDING", "REVIEWING", "ACTIONED", "REJECTED"] as const);
 
   return (
-    <Stack gap="6">
-      <Stack gap="3">
-        <Text
-          fontSize="xs"
-          fontWeight="700"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="gray.500"
-        >
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Support
-        </Text>
-        <Heading size="2xl">신고 운영</Heading>
-        <Text color="gray.600" _dark={{ color: "gray.300" }}>
-          변경된 Spring Admin API 계약에 맞춰 신고 목록 조회와 상태 처리 흐름을
-          연결했습니다. 상태 전이는 백엔드 엔티티 규칙
-          `PENDING → REVIEWING/ACTIONED/REJECTED`,
-          `REVIEWING → ACTIONED/REJECTED`를 따릅니다.
-        </Text>
-      </Stack>
+        </p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">신고 운영</h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            변경된 Spring Admin API 계약에 맞춰 신고 목록 조회와 상태 처리 흐름을
+            연결했습니다. 상태 전이는{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              PENDING → REVIEWING/ACTIONED/REJECTED
+            </code>{" "}
+            및{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              REVIEWING → ACTIONED/REJECTED
+            </code>{" "}
+            규칙을 따릅니다.
+          </p>
+        </div>
+      </div>
 
-      <Grid
-        templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
-        gap="4"
-      >
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              전체 신고
-            </Text>
-            <Heading size="xl">{pageData?.totalElements ?? 0}</Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 {(pageData?.page ?? 0) + 1}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              처리 대기/검토
-            </Text>
-            <Heading size="xl">
-              {
-                reports.filter(
-                  (item) =>
-                    item.status === "PENDING" || item.status === "REVIEWING",
-                ).length
-              }
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 기준
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              선택된 신고
-            </Text>
-            <Heading size="md">
-              {selectedReport?.targetType ?? "선택된 신고 없음"}
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              {selectedReport ? selectedReport.id : "목록에서 신고를 선택하세요."}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-      </Grid>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="전체 신고"
+          value={pageData?.totalElements ?? 0}
+          description={`현재 페이지 ${(pageData?.page ?? 0) + 1}`}
+        />
+        <MetricCard
+          label="처리 대기/검토"
+          value={
+            reports.filter(
+              (item) => item.status === "PENDING" || item.status === "REVIEWING",
+            ).length
+          }
+          description="현재 페이지 기준"
+        />
+        <MetricCard
+          label="선택된 신고"
+          value={selectedReport?.targetType ?? "선택된 신고 없음"}
+          description={
+            selectedReport ? selectedReport.id : "목록에서 신고를 선택하세요."
+          }
+        />
+      </div>
 
-      <Card.Root>
-        <Card.Body>
-          <Grid
-            templateColumns={{ base: "1fr", md: "repeat(4, minmax(0, 1fr))" }}
-            gap="4"
-          >
-            <Field.Root>
-              <Field.Label>상태 필터</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={selectedStatus}
-                  onChange={(event) =>
-                    setSelectedStatus(
-                      event.target.value as (typeof statusOptions)[number],
-                    )
-                  }
-                >
+      <Card>
+        <CardHeader>
+          <CardTitle>신고 필터</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="space-y-2">
+              <Label>상태 필터</Label>
+              <Select
+                value={selectedStatus}
+                onValueChange={(value) =>
+                  setSelectedStatus(value as (typeof statusOptions)[number])
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {statusOptions.map((status) => (
-                    <option key={status} value={status}>
+                    <SelectItem key={status} value={status}>
                       {status === "ALL" ? "전체" : status}
-                    </option>
+                    </SelectItem>
                   ))}
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-            </Field.Root>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Field.Root>
-              <Field.Label>대상 필터</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={selectedTargetType}
-                  onChange={(event) =>
-                    setSelectedTargetType(
-                      event.target.value as (typeof targetTypeOptions)[number],
-                    )
-                  }
-                >
+            <div className="space-y-2">
+              <Label>대상 필터</Label>
+              <Select
+                value={selectedTargetType}
+                onValueChange={(value) =>
+                  setSelectedTargetType(value as (typeof targetTypeOptions)[number])
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {targetTypeOptions.map((targetType) => (
-                    <option key={targetType} value={targetType}>
+                    <SelectItem key={targetType} value={targetType}>
                       {targetType === "ALL" ? "전체" : targetType}
-                    </option>
+                    </SelectItem>
                   ))}
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-            </Field.Root>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Field.Root maxW="120px">
-              <Field.Label>page size</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={pageSize}
-                  onChange={(event) => setPageSize(event.target.value)}
-                >
+            <div className="space-y-2 max-w-[120px]">
+              <Label>page size</Label>
+              <Select value={pageSize} onValueChange={setPageSize}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
                   {["20", "50", "100"].map((size) => (
-                    <option key={size} value={size}>
+                    <SelectItem key={size} value={size}>
                       {size}
-                    </option>
+                    </SelectItem>
                   ))}
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-            </Field.Root>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Field.Root>
-              <Field.Label>페이지 이동</Field.Label>
-              <HStack>
+            <div className="space-y-2">
+              <Label>페이지 이동</Label>
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   disabled={!pageData?.hasPrevious}
@@ -429,205 +426,203 @@ export default function ReportsPage() {
                 >
                   다음
                 </Button>
-              </HStack>
-            </Field.Root>
-          </Grid>
-        </Card.Body>
-      </Card.Root>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Grid
-        templateColumns={{ base: "1fr", xl: "minmax(0, 1.6fr) minmax(360px, 1fr)" }}
-        gap="5"
-      >
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">신고 목록</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
-            <Box overflowX="auto">
-              <Table.Root size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>대상</Table.ColumnHeader>
-                    <Table.ColumnHeader>카테고리</Table.ColumnHeader>
-                    <Table.ColumnHeader>상태</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">생성일</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {reports.map((report) => {
-                    const active = report.id === selectedReport?.id;
-                    return (
-                      <Table.Row
-                        key={report.id}
-                        bg={active ? "orange.50" : undefined}
-                        cursor="pointer"
-                        onClick={() => setSelectedReportId(report.id)}
-                      >
-                        <Table.Cell>
-                          <Stack gap="1">
-                            <Text fontWeight="semibold">{report.targetType}</Text>
-                            <Text
-                              fontSize="xs"
-                              color="gray.500"
-                              wordBreak="break-all"
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(360px,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>신고 목록</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="overflow-hidden rounded-xl border border-border/70">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>대상</TableHead>
+                    <TableHead>카테고리</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="text-right">생성일</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reports.length ? (
+                    reports.map((report) => {
+                      const active = report.id === selectedReport?.id;
+                      return (
+                        <TableRow
+                          key={report.id}
+                          className={cn(
+                            "cursor-pointer",
+                            active && "bg-muted/60 hover:bg-muted/60",
+                          )}
+                          onClick={() => setSelectedReportId(report.id)}
+                        >
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="font-semibold">{report.targetType}</p>
+                              <p className="break-all text-xs text-muted-foreground">
+                                targetId: {report.targetId}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p>{report.category}</p>
+                              <p className="line-clamp-2 text-xs text-muted-foreground">
+                                {report.reason}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={statusClasses(report.status)}
                             >
-                              targetId: {report.targetId}
-                            </Text>
-                          </Stack>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Stack gap="1">
-                            <Text>{report.category}</Text>
-                            <Text
-                              fontSize="xs"
-                              color="gray.500"
-                              lineClamp={2}
-                            >
-                              {report.reason}
-                            </Text>
-                          </Stack>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Badge colorPalette={statusPalette(report.status)}>
-                            {report.status}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell textAlign="end">
-                          <Text fontSize="sm" color="gray.500">
+                              {report.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
                             {formatDateTime(report.createdAt)}
-                          </Text>
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table.Root>
-            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="py-12 text-center text-sm text-muted-foreground"
+                      >
+                        현재 조건에 맞는 신고가 없습니다.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-            {!reports.length ? (
-              <Text fontSize="sm" color="gray.500">
-                현재 조건에 맞는 신고가 없습니다.
-              </Text>
-            ) : null}
-          </Card.Body>
-        </Card.Root>
-
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">신고 처리</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
+        <Card>
+          <CardHeader>
+            <CardTitle>신고 처리</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {selectedReport ? (
-              <Stack gap="4">
-                <Stack gap="2">
-                  <HStack justify="space-between" align="start">
-                    <Stack gap="1">
-                      <Heading size="sm">{selectedReport.targetType}</Heading>
-                      <Text fontSize="sm" color="gray.500">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h2 className="text-lg font-semibold">
+                        {selectedReport.targetType}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
                         신고 ID {selectedReport.id}
-                      </Text>
-                    </Stack>
-                    <Badge colorPalette={statusPalette(selectedReport.status)}>
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={statusClasses(selectedReport.status)}
+                    >
                       {selectedReport.status}
                     </Badge>
-                  </HStack>
-
-                  <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.300" }}>
+                  </div>
+                  <p className="text-sm leading-6 text-muted-foreground">
                     {selectedReport.reason}
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
 
-                <Grid templateColumns="repeat(2, minmax(0, 1fr))" gap="4">
-                  <Field.Root>
-                    <Field.Label>신고자 ID</Field.Label>
-                    <Input value={selectedReport.reporterId} readOnly />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>대상 작성자 ID</Field.Label>
-                    <Input value={selectedReport.targetAuthorId ?? "-"} readOnly />
-                  </Field.Root>
-                </Grid>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <DetailField label="신고자 ID" value={selectedReport.reporterId} />
+                  <DetailField
+                    label="대상 작성자 ID"
+                    value={selectedReport.targetAuthorId ?? "-"}
+                  />
+                </div>
 
-                <Field.Root>
-                  <Field.Label>상태</Field.Label>
-                  <NativeSelect.Root>
-                    <NativeSelect.Field
-                      value={draftStatus}
-                      onChange={(event) =>
-                        setDraftStatus(event.target.value as AdminReportStatus)
-                      }
-                    >
+                <div className="space-y-2">
+                  <Label>상태</Label>
+                  <Select
+                    value={draftStatus}
+                    onValueChange={(value) =>
+                      setDraftStatus(value as AdminReportStatus)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
                       {allowedStatuses.map((status) => (
-                        <option key={status} value={status}>
+                        <SelectItem key={status} value={status}>
                           {status}
-                        </option>
+                        </SelectItem>
                       ))}
-                    </NativeSelect.Field>
-                  </NativeSelect.Root>
-                </Field.Root>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <Field.Root>
-                  <Field.Label>조치 내용</Field.Label>
+                <div className="space-y-2">
+                  <Label htmlFor="report-action">조치 내용</Label>
                   <Input
+                    id="report-action"
                     value={draftAction}
                     onChange={(event) => setDraftAction(event.target.value)}
                     placeholder="DELETE_POST"
                   />
-                </Field.Root>
+                </div>
 
-                <Field.Root>
-                  <Field.Label>관리자 메모</Field.Label>
+                <div className="space-y-2">
+                  <Label htmlFor="report-memo">관리자 메모</Label>
                   <Textarea
-                    autoresize
-                    minH="180px"
+                    id="report-memo"
+                    className="min-h-44"
                     value={draftMemo}
                     onChange={(event) => setDraftMemo(event.target.value)}
                     placeholder="처리 근거와 후속 조치를 기록하세요."
                   />
-                </Field.Root>
+                </div>
 
                 {saveError ? (
-                  <Alert.Root status="error">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 실패</Alert.Title>
-                      <Alert.Description>{saveError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertTitle>저장 실패</AlertTitle>
+                    <AlertDescription>{saveError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {saveSuccess ? (
-                  <Alert.Root status="success">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 완료</Alert.Title>
-                      <Alert.Description>{saveSuccess}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <ShieldAlert className="size-4" />
+                    <AlertTitle>저장 완료</AlertTitle>
+                    <AlertDescription>{saveSuccess}</AlertDescription>
+                  </Alert>
                 ) : null}
 
-                <HStack justify="space-between" align="center">
-                  <Text fontSize="sm" color="gray.500">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground">
                     생성 {formatDateTime(selectedReport.createdAt)} / 수정{" "}
                     {formatDateTime(selectedReport.updatedAt)}
-                  </Text>
+                  </p>
                   <Button
-                    colorPalette="orange"
                     onClick={handleUpdateReport}
-                    loading={isSavePending}
                     disabled={!hasPendingChanges || Boolean(saveValidationError)}
                   >
                     상태 저장
                   </Button>
-                </HStack>
-              </Stack>
+                </div>
+              </div>
             ) : (
-              <Text color="gray.500">목록에서 신고를 선택해주세요.</Text>
+              <p className="text-sm text-muted-foreground">
+                목록에서 신고를 선택해주세요.
+              </p>
             )}
-          </Card.Body>
-        </Card.Root>
-      </Grid>
-    </Stack>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -1,21 +1,24 @@
 "use client";
 
-import {
-  Alert,
-  Box,
-  Button,
-  Heading,
-  Input,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import {
   getMissingFirebasePublicEnv,
   isFirebaseConfigured,
 } from "@/lib/env/public-env";
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const {
@@ -59,112 +62,80 @@ export default function LoginPage() {
   };
 
   return (
-    <Box
-      minH="100vh"
-      display="flex"
-      alignItems="center"
-      justifyContent="center"
-      bgGradient="linear(to-br, orange.50, white, teal.50)"
-      px="6"
-      _dark={{ bgGradient: "linear(to-br, gray.950, gray.900, teal.950)" }}
-    >
-      <Stack
-        w="full"
-        maxW="md"
-        gap="5"
-        rounded="3xl"
-        borderWidth="1px"
-        borderColor="blackAlpha.100"
-        bg="white"
-        px={{ base: "6", md: "8" }}
-        py={{ base: "7", md: "8" }}
-        shadow="lg"
-        _dark={{ bg: "gray.900", borderColor: "whiteAlpha.200" }}
-      >
-        <Stack gap="2">
-          <Text
-            fontSize="xs"
-            fontWeight="700"
-            letterSpacing="0.18em"
-            textTransform="uppercase"
-            color="gray.500"
-          >
+    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,hsl(var(--primary)/0.08),transparent_40%,hsl(var(--chart-2)/0.08))] px-6 py-12">
+      <Card className="w-full max-w-md rounded-[2rem] border-border/70 shadow-2xl shadow-black/5">
+        <CardHeader className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             SKURI Admin
-          </Text>
-          <Heading size="xl">관리자 로그인</Heading>
-          <Text color="gray.600" _dark={{ color: "gray.300" }}>
-            Firebase 로그인 후 Spring API에서 관리자 권한을 확인합니다.
-          </Text>
-        </Stack>
+          </p>
+          <div className="space-y-2">
+            <CardTitle className="text-3xl">관리자 로그인</CardTitle>
+            <CardDescription className="leading-6">
+              Firebase 로그인 후 Spring API에서 관리자 권한을 확인합니다.
+            </CardDescription>
+          </div>
+        </CardHeader>
 
-        {!firebaseReady ? (
-          <Alert.Root status="warning" rounded="xl">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>Firebase 공개 환경변수가 비어 있습니다.</Alert.Title>
-              <Alert.Description>
-                {missingEnv.join(", ")}
-              </Alert.Description>
-            </Alert.Content>
-          </Alert.Root>
-        ) : null}
+        <CardContent className="space-y-5">
+          {!firebaseReady ? (
+            <Alert className="rounded-2xl">
+              <TriangleAlert className="size-4" />
+              <AlertTitle>Firebase 공개 환경변수가 비어 있습니다.</AlertTitle>
+              <AlertDescription>{missingEnv.join(", ")}</AlertDescription>
+            </Alert>
+          ) : null}
 
-        {authError ? (
-          <Alert.Root status="error" rounded="xl">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>로그인 실패</Alert.Title>
-              <Alert.Description>{authError}</Alert.Description>
-            </Alert.Content>
-          </Alert.Root>
-        ) : null}
+          {authError ? (
+            <Alert variant="destructive" className="rounded-2xl">
+              <TriangleAlert className="size-4" />
+              <AlertTitle>로그인 실패</AlertTitle>
+              <AlertDescription>{authError}</AlertDescription>
+            </Alert>
+          ) : null}
 
-        <Stack gap="3">
-          <Stack gap="2">
-            <Text fontSize="sm" fontWeight="600">
-              이메일
-            </Text>
-            <Input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@sungkyul.ac.kr"
-              type="email"
-            />
-          </Stack>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">이메일</Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="admin@sungkyul.ac.kr"
+                type="email"
+              />
+            </div>
 
-          <Stack gap="2">
-            <Text fontSize="sm" fontWeight="600">
-              비밀번호
-            </Text>
-            <Input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="비밀번호"
-              type="password"
-            />
-          </Stack>
-        </Stack>
+            <div className="space-y-2">
+              <Label htmlFor="password">비밀번호</Label>
+              <Input
+                id="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="비밀번호"
+                type="password"
+              />
+            </div>
+          </div>
 
-        <Stack gap="3">
-          <Button
-            colorPalette="orange"
-            onClick={() => void handleEmailLogin()}
-            loading={loading || isPending}
-            disabled={!firebaseReady || !email || !password}
-          >
-            이메일로 로그인
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => void handleGoogleLogin()}
-            loading={loading || isPending}
-            disabled={!firebaseReady}
-          >
-            Google로 로그인
-          </Button>
-        </Stack>
-      </Stack>
-    </Box>
+          <div className="space-y-3">
+            <Button
+              className="w-full"
+              onClick={() => void handleEmailLogin()}
+              disabled={!firebaseReady || !email || !password || loading || isPending}
+            >
+              {loading || isPending ? "로그인 중..." : "이메일로 로그인"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => void handleGoogleLogin()}
+              disabled={!firebaseReady || loading || isPending}
+            >
+              Google로 로그인
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
-

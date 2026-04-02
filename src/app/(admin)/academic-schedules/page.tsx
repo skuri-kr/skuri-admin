@@ -1,26 +1,52 @@
 "use client";
 
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Input,
-  NativeSelect,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+  AlertCircle,
+  CheckCircle2,
+  TriangleAlert,
+} from "lucide-react";
+import { FormField } from "@/components/admin/form-field";
+import {
+  InlineGroup,
+  PageStack,
+  SectionStack,
+  TwoColumnGrid,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   AcademicSchedule,
   AcademicScheduleBulkSyncResponse,
@@ -641,104 +667,92 @@ export default function AcademicSchedulesPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="2">
-        <Heading size="xl">학사 일정 관리</Heading>
-        <Text color="fg.muted">
+    <PageStack>
+      <SectionStack className="gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">학사 일정 관리</h1>
+        <p className="text-sm text-muted-foreground">
           공개 목록 API를 기반으로 기간/중요 일정 필터를 적용하고, 관리자 CRUD 및
           연간 JSON bulk sync API로 일정을 관리합니다.
-        </Text>
-      </Stack>
+        </p>
+      </SectionStack>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">연간 JSON bulk sync</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Stack gap="4">
+      <Card>
+        <CardHeader>
+          <CardTitle>연간 JSON bulk sync</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionStack>
             {bulkError ? (
-              <Alert.Root status="error">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>bulk sync 실패</Alert.Title>
-                  <Alert.Description>{bulkError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>bulk sync 실패</AlertTitle>
+                <AlertDescription>{bulkError}</AlertDescription>
+              </Alert>
             ) : null}
 
             {bulkSuccess ? (
-              <Alert.Root status="success">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>bulk sync 완료</Alert.Title>
-                  <Alert.Description>{bulkSuccess}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>bulk sync 완료</AlertTitle>
+                <AlertDescription>{bulkSuccess}</AlertDescription>
+              </Alert>
             ) : null}
 
-            <Field.Root>
-              <Field.Label>bulk request JSON</Field.Label>
+            <FormField
+              label="bulk request JSON"
+              hint="wrapper object 형식(`scopeStartDate`, `scopeEndDate`, `schedules`)과 기존 Firebase 스크립트처럼 배열만 붙여넣는 형식 둘 다 지원합니다."
+            >
               <Textarea
-                fontFamily="mono"
-                minH="320px"
+                className="min-h-[320px] font-mono text-xs"
                 value={bulkJson}
                 onChange={(event) => setBulkJson(event.target.value)}
               />
-              <Field.HelperText>
-                wrapper object 형식(`scopeStartDate`, `scopeEndDate`, `schedules`)과
-                기존 Firebase 스크립트처럼 배열만 붙여넣는 형식 둘 다 지원합니다.
-              </Field.HelperText>
-            </Field.Root>
+            </FormField>
 
             {bulkValidationError ? (
-              <Alert.Root status="warning">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>업로드 전 확인 필요</Alert.Title>
-                  <Alert.Description>{bulkValidationError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert>
+                <TriangleAlert className="h-4 w-4" />
+                <AlertTitle>업로드 전 확인 필요</AlertTitle>
+                <AlertDescription>{bulkValidationError}</AlertDescription>
+              </Alert>
             ) : null}
 
             {lastBulkResult ? (
-              <HStack wrap="wrap">
-                <Badge colorPalette="blue">
+              <InlineGroup>
+                <Badge variant="secondary">
                   {lastBulkResult.scopeStartDate} ~ {lastBulkResult.scopeEndDate}
                 </Badge>
-                <Badge colorPalette="green">
+                <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
                   created {lastBulkResult.created}
                 </Badge>
-                <Badge colorPalette="yellow">
+                <Badge className="border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
                   updated {lastBulkResult.updated}
                 </Badge>
-                <Badge colorPalette="red">
+                <Badge variant="destructive">
                   deleted {lastBulkResult.deleted}
                 </Badge>
-              </HStack>
+              </InlineGroup>
             ) : null}
 
-            <HStack justify="end">
+            <div className="flex justify-end">
               <Button
-                colorPalette="blue"
-                disabled={Boolean(bulkValidationError)}
-                loading={isBulkPending}
+                disabled={Boolean(bulkValidationError) || isBulkPending}
                 onClick={handleBulkSync}
               >
-                bulk sync 실행
+                {isBulkPending ? "bulk sync 실행 중..." : "bulk sync 실행"}
               </Button>
-            </HStack>
-          </Stack>
-        </Card.Body>
-      </Card.Root>
+            </div>
+          </SectionStack>
+        </CardContent>
+      </Card>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">목록 필터</Heading>
-        </Card.Header>
-        <Card.Body>
-          <HStack align="end" gap="4" wrap="wrap">
-            <Field.Root maxW="220px">
-              <Field.Label>startDate</Field.Label>
+      <Card>
+        <CardHeader>
+          <CardTitle>목록 필터</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InlineGroup className="items-end">
+            <FormField label="startDate" className="w-full max-w-[220px]">
               <Input
                 type="date"
                 value={filters.startDate}
@@ -749,10 +763,9 @@ export default function AcademicSchedulesPage() {
                   }))
                 }
               />
-            </Field.Root>
+            </FormField>
 
-            <Field.Root maxW="220px">
-              <Field.Label>endDate</Field.Label>
+            <FormField label="endDate" className="w-full max-w-[220px]">
               <Input
                 type="date"
                 value={filters.endDate}
@@ -763,29 +776,31 @@ export default function AcademicSchedulesPage() {
                   }))
                 }
               />
-            </Field.Root>
+            </FormField>
 
-            <Field.Root maxW="220px">
-              <Field.Label>primary</Field.Label>
-              <NativeSelect.Root>
-                <NativeSelect.Field
-                  value={filters.primary}
-                  onChange={(event) =>
-                    setFilters((current) => ({
-                      ...current,
-                      primary: event.target.value as AcademicScheduleFilters["primary"],
-                    }))
-                  }
-                >
-                  <option value="all">all</option>
-                  <option value="true">true</option>
-                  <option value="false">false</option>
-                </NativeSelect.Field>
-              </NativeSelect.Root>
-            </Field.Root>
+            <FormField label="primary" className="w-full max-w-[220px]">
+              <Select
+                value={filters.primary}
+                onValueChange={(value) =>
+                  setFilters((current) => ({
+                    ...current,
+                    primary: value as AcademicScheduleFilters["primary"],
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">all</SelectItem>
+                  <SelectItem value="true">true</SelectItem>
+                  <SelectItem value="false">false</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
 
             <Button
-              variant="ghost"
+              variant="secondary"
               onClick={() =>
                 setFilters({
                   startDate: "",
@@ -796,103 +811,106 @@ export default function AcademicSchedulesPage() {
             >
               필터 초기화
             </Button>
-          </HStack>
-        </Card.Body>
-      </Card.Root>
+          </InlineGroup>
+        </CardContent>
+      </Card>
 
-      <Grid gap="6" templateColumns={{ base: "1fr", xl: "1.05fr 0.95fr" }}>
-        <Stack gap="6">
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">일정 목록</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="4">
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <SectionStack className="gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>일정 목록</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack>
                 {listError ? (
-                  <Alert.Root status="warning">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>목록 확인 필요</Alert.Title>
-                      <Alert.Description>{listError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <TriangleAlert className="h-4 w-4" />
+                    <AlertTitle>목록 확인 필요</AlertTitle>
+                    <AlertDescription>{listError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
-                <Table.Root interactive size="sm">
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.ColumnHeader>제목</Table.ColumnHeader>
-                      <Table.ColumnHeader>기간</Table.ColumnHeader>
-                      <Table.ColumnHeader>구분</Table.ColumnHeader>
-                    </Table.Row>
-                  </Table.Header>
-                  <Table.Body>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>제목</TableHead>
+                      <TableHead>기간</TableHead>
+                      <TableHead>구분</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {items.map((item) => (
-                      <Table.Row
+                      <TableRow
                         key={item.id}
-                        bg={selectedSchedule?.id === item.id ? "bg.subtle" : undefined}
-                        cursor="pointer"
+                        className={
+                          selectedSchedule?.id === item.id
+                            ? "cursor-pointer bg-muted/40"
+                            : "cursor-pointer"
+                        }
                         onClick={() => setSelectedScheduleId(item.id)}
                       >
-                        <Table.Cell>
-                          <Stack gap="1">
-                            <Text fontWeight="semibold">{item.title}</Text>
-                            <Text color="fg.muted" fontSize="xs">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-semibold">{item.title}</p>
+                            <p className="text-xs text-muted-foreground">
                               {item.description ?? "-"}
-                            </Text>
-                          </Stack>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text fontSize="sm">
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm">
                             {item.startDate} ~ {item.endDate}
-                          </Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <HStack wrap="wrap">
-                            <Badge colorPalette={item.isPrimary ? "green" : "gray"}>
+                          </p>
+                        </TableCell>
+                        <TableCell>
+                          <InlineGroup>
+                            <Badge
+                              className={
+                                item.isPrimary
+                                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                  : "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300"
+                              }
+                            >
                               {item.isPrimary ? "주요" : "일반"}
                             </Badge>
-                            <Badge colorPalette="blue">{item.type}</Badge>
-                          </HStack>
-                        </Table.Cell>
-                      </Table.Row>
+                            <Badge variant="secondary">{item.type}</Badge>
+                          </InlineGroup>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </Table.Body>
-                </Table.Root>
+                  </TableBody>
+                </Table>
 
                 {!items.length ? (
-                  <Text color="fg.muted" fontSize="sm">
+                  <p className="text-sm text-muted-foreground">
                     현재 조건에 맞는 학사 일정이 없습니다.
-                  </Text>
+                  </p>
                 ) : null}
-              </Stack>
-            </Card.Body>
-          </Card.Root>
+              </SectionStack>
+            </CardContent>
+          </Card>
 
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">일정 추가</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="4">
+          <Card>
+            <CardHeader>
+              <CardTitle>일정 추가</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack>
                 {createError ? (
-                  <Alert.Root status="error">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>생성 실패</Alert.Title>
-                      <Alert.Description>{createError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>생성 실패</AlertTitle>
+                    <AlertDescription>{createError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {createSuccess ? (
-                  <Alert.Root status="success">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>생성 완료</Alert.Title>
-                      <Alert.Description>{createSuccess}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertTitle>생성 완료</AlertTitle>
+                    <AlertDescription>{createSuccess}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 <ScheduleForm
@@ -901,66 +919,58 @@ export default function AcademicSchedulesPage() {
                   validationError={createValidationError}
                 />
 
-                <HStack justify="end">
+                <div className="flex justify-end">
                   <Button
-                    colorPalette="blue"
-                    disabled={Boolean(createValidationError)}
-                    loading={isCreatePending}
+                    disabled={Boolean(createValidationError) || isCreatePending}
                     onClick={handleCreate}
                   >
-                    추가
+                    {isCreatePending ? "추가 중..." : "추가"}
                   </Button>
-                </HStack>
-              </Stack>
-            </Card.Body>
-          </Card.Root>
-        </Stack>
+                </div>
+              </SectionStack>
+            </CardContent>
+          </Card>
+        </SectionStack>
 
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">선택 일정 편집</Heading>
-          </Card.Header>
-          <Card.Body>
-            <Stack gap="4">
+        <Card>
+          <CardHeader>
+            <CardTitle>선택 일정 편집</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SectionStack>
               {selectedSchedule ? (
-                <Text color="fg.muted" fontSize="sm">
+                <p className="text-sm text-muted-foreground">
                   마지막 조회 기준 선택 일정: {selectedSchedule.title} (
                   {formatDateTime(`${selectedSchedule.startDate}T00:00:00`)})
-                </Text>
+                </p>
               ) : (
-                <Text color="fg.muted" fontSize="sm">
+                <p className="text-sm text-muted-foreground">
                   목록에서 수정할 일정을 선택해주세요.
-                </Text>
+                </p>
               )}
 
               {editError ? (
-                <Alert.Root status="error">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Title>수정 실패</Alert.Title>
-                    <Alert.Description>{editError}</Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>수정 실패</AlertTitle>
+                  <AlertDescription>{editError}</AlertDescription>
+                </Alert>
               ) : null}
 
               {editSuccess ? (
-                <Alert.Root status="success">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Title>수정 완료</Alert.Title>
-                    <Alert.Description>{editSuccess}</Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>수정 완료</AlertTitle>
+                  <AlertDescription>{editSuccess}</AlertDescription>
+                </Alert>
               ) : null}
 
               {deleteError ? (
-                <Alert.Root status="error">
-                  <Alert.Indicator />
-                  <Alert.Content>
-                    <Alert.Title>삭제 실패</Alert.Title>
-                    <Alert.Description>{deleteError}</Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>삭제 실패</AlertTitle>
+                  <AlertDescription>{deleteError}</AlertDescription>
+                </Alert>
               ) : null}
 
               <ScheduleForm
@@ -970,35 +980,36 @@ export default function AcademicSchedulesPage() {
                 validationError={editValidationError}
               />
 
-              <HStack justify="space-between" wrap="wrap">
-                <Text color="fg.muted" fontSize="sm">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-muted-foreground">
                   SINGLE 일정은 startDate와 endDate가 동일해야 합니다.
-                </Text>
-                <HStack>
+                </p>
+                <InlineGroup>
                   <Button
-                    colorPalette="red"
                     disabled={!selectedSchedule}
-                    loading={isDeletePending}
                     variant="outline"
                     onClick={handleDelete}
                   >
-                    삭제
+                    {isDeletePending ? "삭제 중..." : "삭제"}
                   </Button>
                   <Button
-                    colorPalette="blue"
-                    disabled={!selectedSchedule || !isEditDirty || Boolean(editValidationError)}
-                    loading={isEditPending}
+                    disabled={
+                      !selectedSchedule ||
+                      !isEditDirty ||
+                      Boolean(editValidationError) ||
+                      isEditPending
+                    }
                     onClick={handleUpdate}
                   >
-                    저장
+                    {isEditPending ? "저장 중..." : "저장"}
                   </Button>
-                </HStack>
-              </HStack>
-            </Stack>
-          </Card.Body>
-        </Card.Root>
-      </Grid>
-    </Stack>
+                </InlineGroup>
+              </div>
+            </SectionStack>
+          </CardContent>
+        </Card>
+      </div>
+    </PageStack>
   );
 }
 
@@ -1019,96 +1030,90 @@ function ScheduleForm({
   disabled = false,
 }: ScheduleFormProps) {
   return (
-    <Stack gap="4">
-      <Field.Root>
-        <Field.Label>title</Field.Label>
+    <SectionStack>
+      <FormField label="title">
         <Input
           disabled={disabled}
           value={form.title}
           onChange={(event) => onChange("title", event.target.value)}
         />
-      </Field.Root>
+      </FormField>
 
-      <HStack align="start" gap="4" wrap="wrap">
-        <Field.Root maxW="220px">
-          <Field.Label>startDate</Field.Label>
+      <TwoColumnGrid className="max-w-2xl">
+        <FormField label="startDate">
           <Input
             disabled={disabled}
             type="date"
             value={form.startDate}
             onChange={(event) => onChange("startDate", event.target.value)}
           />
-        </Field.Root>
+        </FormField>
 
-        <Field.Root maxW="220px">
-          <Field.Label>endDate</Field.Label>
+        <FormField label="endDate">
           <Input
             disabled={disabled}
             type="date"
             value={form.endDate}
             onChange={(event) => onChange("endDate", event.target.value)}
           />
-        </Field.Root>
-      </HStack>
+        </FormField>
+      </TwoColumnGrid>
 
-      <HStack align="start" gap="4" wrap="wrap">
-        <Field.Root maxW="220px">
-          <Field.Label>type</Field.Label>
-          <NativeSelect.Root disabled={disabled}>
-            <NativeSelect.Field
-              value={form.type}
-              onChange={(event) =>
-                onChange("type", event.target.value as AcademicScheduleType)
-              }
-            >
+      <TwoColumnGrid className="max-w-2xl">
+        <FormField label="type">
+          <Select
+            disabled={disabled}
+            value={form.type}
+            onValueChange={(value) => onChange("type", value as AcademicScheduleType)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
               {academicScheduleTypes.map((type) => (
-                <option key={type} value={type}>
+                <SelectItem key={type} value={type}>
                   {type}
-                </option>
+                </SelectItem>
               ))}
-            </NativeSelect.Field>
-          </NativeSelect.Root>
-        </Field.Root>
+            </SelectContent>
+          </Select>
+        </FormField>
 
-        <Field.Root maxW="220px">
-          <Field.Label>isPrimary</Field.Label>
-          <NativeSelect.Root disabled={disabled}>
-            <NativeSelect.Field
-              value={form.isPrimary}
-              onChange={(event) =>
-                onChange(
-                  "isPrimary",
-                  event.target.value as AcademicScheduleFormState["isPrimary"],
-                )
-              }
-            >
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </NativeSelect.Field>
-          </NativeSelect.Root>
-        </Field.Root>
-      </HStack>
+        <FormField label="isPrimary">
+          <Select
+            disabled={disabled}
+            value={form.isPrimary}
+            onValueChange={(value) =>
+              onChange("isPrimary", value as AcademicScheduleFormState["isPrimary"])
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">true</SelectItem>
+              <SelectItem value="false">false</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+      </TwoColumnGrid>
 
-      <Field.Root>
-        <Field.Label>description</Field.Label>
+      <FormField label="description">
         <Textarea
           disabled={disabled}
-          autoresize
-          minH="140px"
+          className="min-h-[140px]"
           value={form.description}
           onChange={(event) => onChange("description", event.target.value)}
         />
-      </Field.Root>
+      </FormField>
 
       {validationError ? (
-        <Alert.Root status="warning">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>저장 전 확인 필요</Alert.Title>
-            <Alert.Description>{validationError}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert>
+          <TriangleAlert className="h-4 w-4" />
+          <AlertTitle>저장 전 확인 필요</AlertTitle>
+          <AlertDescription>{validationError}</AlertDescription>
+        </Alert>
       ) : null}
-    </Stack>
+    </SectionStack>
   );
 }

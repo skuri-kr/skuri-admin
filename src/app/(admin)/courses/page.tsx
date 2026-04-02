@@ -1,19 +1,21 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  Heading,
-  HStack,
-  Input,
-  Stack,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+import { AlertCircle, BookOpen, Trash2 } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FormField } from "@/components/admin/form-field";
+import { InlineGroup, PageStack, SectionStack } from "@/components/admin/layout";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
@@ -188,126 +190,121 @@ export default function CoursesPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="2">
-        <Heading size="xl">강의 bulk 관리</Heading>
-        <Text color="fg.muted">
+    <PageStack>
+      <SectionStack className="gap-2">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Academic
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">강의 bulk 관리</h1>
+        </div>
+        <p className="text-sm text-muted-foreground">
           현재 계약은 학기 단위 JSON 업로드와 학기 전체 삭제만 제공합니다. 따라서
           관리자 화면도 업로드 패널과 삭제 패널 중심으로 구성합니다.
-        </Text>
-      </Stack>
+        </p>
+      </SectionStack>
 
       {actionError ? (
-        <Alert.Root status="error">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>작업 실패</Alert.Title>
-            <Alert.Description>{actionError}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>작업 실패</AlertTitle>
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
       ) : null}
 
       {actionSuccess ? (
-        <Alert.Root status="success">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>작업 완료</Alert.Title>
-            <Alert.Description>{actionSuccess}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Alert>
+          <BookOpen className="h-4 w-4" />
+          <AlertTitle>작업 완료</AlertTitle>
+          <AlertDescription>{actionSuccess}</AlertDescription>
+        </Alert>
       ) : null}
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">학기 강의 업로드</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Stack gap="4">
-            <Field.Root>
-              <Field.Label>bulk request JSON</Field.Label>
+      <Card>
+        <CardHeader>
+          <CardTitle>학기 강의 업로드</CardTitle>
+          <CardDescription>
+            semester/code/division 기준 업서트이며, 같은 학기의 누락 강의는 삭제됩니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SectionStack>
+            <FormField label="bulk request JSON">
               <Textarea
-                fontFamily="mono"
-                minH="420px"
+                className="min-h-[420px] font-mono text-xs"
                 value={bulkJson}
                 onChange={(event) => setBulkJson(event.target.value)}
               />
-              <Field.HelperText>
-                semester/code/division 기준 업서트이며, 같은 학기의 누락 강의는 삭제됩니다.
-              </Field.HelperText>
-            </Field.Root>
+            </FormField>
 
             {bulkValidationError ? (
-              <Alert.Root status="warning">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>업로드 전 확인 필요</Alert.Title>
-                  <Alert.Description>{bulkValidationError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>업로드 전 확인 필요</AlertTitle>
+                <AlertDescription>{bulkValidationError}</AlertDescription>
+              </Alert>
             ) : null}
 
-            <HStack justify="end">
+            <div className="flex justify-end">
               <Button
-                colorPalette="blue"
-                disabled={Boolean(bulkValidationError)}
-                loading={isBulkPending}
+                disabled={Boolean(bulkValidationError) || isBulkPending}
                 onClick={handleBulkUpload}
               >
-                bulk 업로드 실행
+                {isBulkPending ? "업로드 중..." : "bulk 업로드 실행"}
               </Button>
-            </HStack>
-          </Stack>
-        </Card.Body>
-      </Card.Root>
+            </div>
+          </SectionStack>
+        </CardContent>
+      </Card>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">학기 전체 삭제</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Stack gap="4">
-            <HStack align="end" wrap="wrap">
-              <Field.Root maxW="240px">
-                <Field.Label>semester</Field.Label>
-                <Input
-                  value={deleteSemester}
-                  onChange={(event) => setDeleteSemester(event.target.value)}
-                  placeholder="2026-1"
-                />
-              </Field.Root>
-              <Button
-                colorPalette="red"
-                disabled={Boolean(deleteValidationError)}
-                loading={isDeletePending}
-                variant="outline"
-                onClick={handleDeleteSemester}
-              >
-                학기 전체 삭제
-              </Button>
-            </HStack>
-          </Stack>
-        </Card.Body>
-      </Card.Root>
+      <Card>
+        <CardHeader>
+          <CardTitle>학기 전체 삭제</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InlineGroup className="items-end">
+            <FormField label="semester" className="w-full max-w-60">
+              <Input
+                value={deleteSemester}
+                onChange={(event) => setDeleteSemester(event.target.value)}
+                placeholder="2026-1"
+              />
+            </FormField>
+            <Button
+              variant="outline"
+              disabled={Boolean(deleteValidationError) || isDeletePending}
+              onClick={handleDeleteSemester}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isDeletePending ? "삭제 중..." : "학기 전체 삭제"}
+            </Button>
+          </InlineGroup>
+        </CardContent>
+      </Card>
 
-      <Card.Root>
-        <Card.Header>
-          <Heading size="md">마지막 실행 결과</Heading>
-        </Card.Header>
-        <Card.Body>
+      <Card>
+        <CardHeader>
+          <CardTitle>마지막 실행 결과</CardTitle>
+        </CardHeader>
+        <CardContent>
           {lastResult ? (
-            <HStack wrap="wrap">
-              <Badge colorPalette="blue">{lastResult.semester}</Badge>
-              <Badge colorPalette="green">created {lastResult.created}</Badge>
-              <Badge colorPalette="yellow">updated {lastResult.updated}</Badge>
-              <Badge colorPalette="red">deleted {lastResult.deleted}</Badge>
-            </HStack>
+            <InlineGroup>
+              <Badge variant="secondary">{lastResult.semester}</Badge>
+              <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">
+                created {lastResult.created}
+              </Badge>
+              <Badge className="border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+                updated {lastResult.updated}
+              </Badge>
+              <Badge variant="destructive">deleted {lastResult.deleted}</Badge>
+            </InlineGroup>
           ) : (
-            <Text color="fg.muted" fontSize="sm">
+            <p className="text-sm text-muted-foreground">
               아직 실행 결과가 없습니다.
-            </Text>
+            </p>
           )}
-        </Card.Body>
-      </Card.Root>
-    </Stack>
+        </CardContent>
+      </Card>
+    </PageStack>
   );
 }

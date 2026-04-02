@@ -567,6 +567,19 @@ export interface CafeteriaMenu {
   weekStart: string;
   weekEnd: string;
   menus: Record<string, Record<string, string[]>>;
+  menuEntries?: Record<
+    string,
+    Record<
+      string,
+      Array<{
+        title: string;
+        badges: Array<{
+          code: string;
+          label: string;
+        }>;
+      }>
+    >
+  >;
 }
 
 export type AcademicScheduleType = "SINGLE" | "MULTI";

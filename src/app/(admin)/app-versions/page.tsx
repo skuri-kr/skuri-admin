@@ -1,24 +1,32 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Input,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
-  Tabs,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+import { AlertCircle, RefreshCw, Smartphone } from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
-import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
+import {
+  PageErrorState,
+  PageLoadingState,
+} from "@/components/admin/page-status";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError, getJson } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
@@ -29,7 +37,7 @@ import type {
   AppVersion,
   AppVersionAdminUpdateResponse,
 } from "@/features/admin/types";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
 
 const appPlatforms = ["ios", "android"] as const;
 
@@ -124,6 +132,27 @@ function buildComparableSnapshot(form: AppVersionFormState) {
     buttonText: form.buttonText,
     buttonUrl: form.buttonUrl,
   };
+}
+
+function statusClasses(active: boolean) {
+  return active
+    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/50 dark:text-red-300"
+    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300";
+}
+
+function buttonClasses(active: boolean) {
+  return active
+    ? "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/50 dark:text-violet-300"
+    : "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300";
+}
+
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <div className="text-sm leading-6">{value}</div>
+    </div>
+  );
 }
 
 export default function AppVersionsPage() {
@@ -224,10 +253,7 @@ export default function AppVersionsPage() {
   const activeVersion = versionsByPlatform[activePlatform];
   const activeForm = formsByPlatform[activePlatform];
 
-  const validationError = useMemo(
-    () => validateForm(activeForm),
-    [activeForm],
-  );
+  const validationError = useMemo(() => validateForm(activeForm), [activeForm]);
 
   const isDirty = useMemo(
     () =>
@@ -337,30 +363,26 @@ export default function AppVersionsPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="2">
-        <Heading size="xl">앱 버전 관리</Heading>
-        <Text color="fg.muted">
-          Spring public 버전 응답을 기준으로 현재 live 설정을 불러오고,
-          관리자 PUT API로 플랫폼별 최소 버전과 업데이트 안내 문구를 저장합니다.
-        </Text>
-      </Stack>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">앱 버전 관리</h1>
+        <p className="max-w-3xl text-sm text-muted-foreground">
+          Spring public 버전 응답을 기준으로 현재 live 설정을 불러오고, 관리자
+          PUT API로 플랫폼별 최소 버전과 업데이트 안내 문구를 저장합니다.
+        </p>
+      </div>
 
-      <Tabs.Root
-        fitted
-        lazyMount
+      <Tabs
         value={activePlatform}
-        onValueChange={(details) =>
-          setActivePlatform(details.value as AppPlatform)
-        }
+        onValueChange={(value) => setActivePlatform(value as AppPlatform)}
       >
-        <Tabs.List>
+        <TabsList className="w-full justify-start">
           {appPlatforms.map((platform) => (
-            <Tabs.Trigger key={platform} value={platform}>
+            <TabsTrigger key={platform} value={platform} className="min-w-28">
               {platformLabels[platform]}
-            </Tabs.Trigger>
+            </TabsTrigger>
           ))}
-        </Tabs.List>
+        </TabsList>
 
         {appPlatforms.map((platform) => {
           const version = versionsByPlatform[platform];
@@ -369,256 +391,253 @@ export default function AppVersionsPage() {
           const lastSavedAt = lastSavedAtByPlatform[platform] ?? null;
 
           return (
-            <Tabs.Content key={platform} value={platform} pt="6">
-              <Grid gap="6" templateColumns={{ base: "1fr", xl: "1.1fr 0.9fr" }}>
-                <Card.Root>
-                  <Card.Header>
-                    <Heading size="md">{platformLabels[platform]} 설정 편집</Heading>
-                  </Card.Header>
-                  <Card.Body>
-                    <Stack gap="5">
-                      {saveError && platform === activePlatform ? (
-                        <Alert.Root status="error">
-                          <Alert.Indicator />
-                          <Alert.Content>
-                            <Alert.Title>저장 실패</Alert.Title>
-                            <Alert.Description>{saveError}</Alert.Description>
-                          </Alert.Content>
-                        </Alert.Root>
-                      ) : null}
+            <TabsContent key={platform} value={platform} className="pt-4">
+              <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{platformLabels[platform]} 설정 편집</CardTitle>
+                    <CardDescription>
+                      minimumVersion, forceUpdate, 버튼 노출 여부와 안내 문구를
+                      수정합니다.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {saveError && platform === activePlatform ? (
+                      <Alert variant="destructive">
+                        <AlertCircle className="size-4" />
+                        <AlertTitle>저장 실패</AlertTitle>
+                        <AlertDescription>{saveError}</AlertDescription>
+                      </Alert>
+                    ) : null}
 
-                      {saveSuccess && platform === activePlatform ? (
-                        <Alert.Root status="success">
-                          <Alert.Indicator />
-                          <Alert.Content>
-                            <Alert.Title>저장 완료</Alert.Title>
-                            <Alert.Description>{saveSuccess}</Alert.Description>
-                          </Alert.Content>
-                        </Alert.Root>
-                      ) : null}
+                    {saveSuccess && platform === activePlatform ? (
+                      <Alert>
+                        <RefreshCw className="size-4" />
+                        <AlertTitle>저장 완료</AlertTitle>
+                        <AlertDescription>{saveSuccess}</AlertDescription>
+                      </Alert>
+                    ) : null}
 
-                      <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
-                        <Field.Root invalid={platform === activePlatform && Boolean(validationError && !form.minimumVersion.trim())}>
-                          <Field.Label>minimumVersion</Field.Label>
-                          <Input
-                            value={form.minimumVersion}
-                            onChange={(event) =>
-                              updateForm("minimumVersion", event.target.value)
-                            }
-                          />
-                          <Field.HelperText>
-                            Public API 기본값은 1.0.0입니다.
-                          </Field.HelperText>
-                        </Field.Root>
-
-                        <Field.Root>
-                          <Field.Label>forceUpdate</Field.Label>
-                          <NativeSelect.Root>
-                            <NativeSelect.Field
-                              value={form.forceUpdate}
-                              onChange={(event) =>
-                                updateForm(
-                                  "forceUpdate",
-                                  event.target.value as AppVersionFormState["forceUpdate"],
-                                )
-                              }
-                            >
-                              <option value="false">false</option>
-                              <option value="true">true</option>
-                            </NativeSelect.Field>
-                          </NativeSelect.Root>
-                        </Field.Root>
-
-                        <Field.Root>
-                          <Field.Label>title</Field.Label>
-                          <Input
-                            value={form.title}
-                            onChange={(event) =>
-                              updateForm("title", event.target.value)
-                            }
-                            placeholder="업데이트 안내"
-                          />
-                        </Field.Root>
-
-                        <Field.Root>
-                          <Field.Label>showButton</Field.Label>
-                          <NativeSelect.Root>
-                            <NativeSelect.Field
-                              value={form.showButton}
-                              onChange={(event) =>
-                                updateShowButton(
-                                  event.target.value as AppVersionFormState["showButton"],
-                                )
-                              }
-                            >
-                              <option value="false">false</option>
-                              <option value="true">true</option>
-                            </NativeSelect.Field>
-                          </NativeSelect.Root>
-                          <Field.HelperText>
-                            true일 때만 buttonText/buttonUrl을 함께 보냅니다.
-                          </Field.HelperText>
-                        </Field.Root>
-                      </SimpleGrid>
-
-                      <Field.Root>
-                        <Field.Label>message</Field.Label>
-                        <Textarea
-                          autoresize
-                          minH="160px"
-                          value={form.message}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-minimumVersion`}>
+                          minimumVersion
+                        </Label>
+                        <Input
+                          id={`${platform}-minimumVersion`}
+                          value={form.minimumVersion}
                           onChange={(event) =>
-                            updateForm("message", event.target.value)
+                            updateForm("minimumVersion", event.target.value)
                           }
-                          placeholder="안정성 개선을 위한 업데이트입니다."
                         />
-                      </Field.Root>
+                        <p className="text-xs text-muted-foreground">
+                          Public API 기본값은 1.0.0입니다.
+                        </p>
+                      </div>
 
-                      <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
-                        <Field.Root invalid={platform === activePlatform && buttonVisible && !form.buttonText.trim()}>
-                          <Field.Label>buttonText</Field.Label>
-                          <Input
-                            disabled={!buttonVisible}
-                            value={form.buttonText}
-                            onChange={(event) =>
-                              updateForm("buttonText", event.target.value)
-                            }
-                            placeholder="업데이트"
-                          />
-                        </Field.Root>
+                      <div className="space-y-2">
+                        <Label>forceUpdate</Label>
+                        <Select
+                          value={form.forceUpdate}
+                          onValueChange={(value) =>
+                            updateForm(
+                              "forceUpdate",
+                              value as AppVersionFormState["forceUpdate"],
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="false">false</SelectItem>
+                            <SelectItem value="true">true</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        <Field.Root invalid={platform === activePlatform && buttonVisible && !form.buttonUrl.trim()}>
-                          <Field.Label>buttonUrl</Field.Label>
-                          <Input
-                            disabled={!buttonVisible}
-                            value={form.buttonUrl}
-                            onChange={(event) =>
-                              updateForm("buttonUrl", event.target.value)
-                            }
-                            placeholder="https://apps.apple.com/..."
-                          />
-                        </Field.Root>
-                      </SimpleGrid>
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-title`}>title</Label>
+                        <Input
+                          id={`${platform}-title`}
+                          value={form.title}
+                          onChange={(event) =>
+                            updateForm("title", event.target.value)
+                          }
+                          placeholder="업데이트 안내"
+                        />
+                      </div>
 
-                      <HStack justify="space-between" wrap="wrap">
-                        <Text color="fg.muted" fontSize="sm">
-                          마지막 관리자 저장 시각:{" "}
-                          {lastSavedAt ? formatDateTime(lastSavedAt) : "-"}
-                        </Text>
-                        <HStack>
-                          <Button
-                            disabled={!isDirty || isSavePending}
-                            variant="ghost"
-                            onClick={resetForm}
-                          >
-                            변경 취소
-                          </Button>
-                          <Button
-                            colorPalette="blue"
-                            disabled={!isDirty || Boolean(validationError)}
-                            loading={isSavePending && platform === activePlatform}
-                            onClick={handleSave}
-                          >
-                            저장
-                          </Button>
-                        </HStack>
-                      </HStack>
-                    </Stack>
-                  </Card.Body>
-                </Card.Root>
+                      <div className="space-y-2">
+                        <Label>showButton</Label>
+                        <Select
+                          value={form.showButton}
+                          onValueChange={(value) =>
+                            updateShowButton(
+                              value as AppVersionFormState["showButton"],
+                            )
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="false">false</SelectItem>
+                            <SelectItem value="true">true</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          true일 때만 buttonText/buttonUrl을 함께 보냅니다.
+                        </p>
+                      </div>
+                    </div>
 
-                <Stack gap="6">
-                  <Card.Root>
-                    <Card.Header>
-                      <Heading size="md">현재 live 응답</Heading>
-                    </Card.Header>
-                    <Card.Body>
-                      <Stack gap="4">
-                        <HStack wrap="wrap">
-                          <Badge colorPalette="blue">{platformLabels[platform]}</Badge>
-                          <Badge
-                            colorPalette={version.forceUpdate ? "red" : "green"}
-                          >
-                            {version.forceUpdate ? "강제 업데이트" : "선택 업데이트"}
-                          </Badge>
-                          <Badge
-                            colorPalette={version.showButton ? "purple" : "gray"}
-                          >
-                            {version.showButton ? "버튼 노출" : "버튼 숨김"}
-                          </Badge>
-                        </HStack>
+                    <div className="space-y-2">
+                      <Label htmlFor={`${platform}-message`}>message</Label>
+                      <Textarea
+                        id={`${platform}-message`}
+                        className="min-h-40"
+                        value={form.message}
+                        onChange={(event) =>
+                          updateForm("message", event.target.value)
+                        }
+                        placeholder="안정성 개선을 위한 업데이트입니다."
+                      />
+                    </div>
 
-                        <Stack gap="1">
-                          <Text color="fg.muted" fontSize="sm">
-                            minimumVersion
-                          </Text>
-                          <Text fontSize="lg" fontWeight="semibold">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-buttonText`}>buttonText</Label>
+                        <Input
+                          id={`${platform}-buttonText`}
+                          disabled={!buttonVisible}
+                          value={form.buttonText}
+                          onChange={(event) =>
+                            updateForm("buttonText", event.target.value)
+                          }
+                          placeholder="업데이트"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`${platform}-buttonUrl`}>buttonUrl</Label>
+                        <Input
+                          id={`${platform}-buttonUrl`}
+                          disabled={!buttonVisible}
+                          value={form.buttonUrl}
+                          onChange={(event) =>
+                            updateForm("buttonUrl", event.target.value)
+                          }
+                          placeholder="https://apps.apple.com/..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        마지막 관리자 저장 시각:{" "}
+                        {lastSavedAt ? formatDateTime(lastSavedAt) : "-"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          disabled={!isDirty || isSavePending}
+                          onClick={resetForm}
+                        >
+                          변경 취소
+                        </Button>
+                        <Button
+                          disabled={!isDirty || Boolean(validationError)}
+                          onClick={handleSave}
+                        >
+                          저장
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>현재 live 응답</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300">
+                          {platformLabels[platform]}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={statusClasses(version.forceUpdate)}
+                        >
+                          {version.forceUpdate ? "강제 업데이트" : "선택 업데이트"}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className={buttonClasses(version.showButton)}
+                        >
+                          {version.showButton ? "버튼 노출" : "버튼 숨김"}
+                        </Badge>
+                      </div>
+
+                      <InfoRow
+                        label="minimumVersion"
+                        value={
+                          <p className="text-lg font-semibold">
                             {version.minimumVersion}
-                          </Text>
-                        </Stack>
+                          </p>
+                        }
+                      />
+                      <InfoRow label="title" value={version.title ?? "-"} />
+                      <InfoRow
+                        label="message"
+                        value={
+                          <p className="whitespace-pre-wrap">{version.message ?? "-"}</p>
+                        }
+                      />
+                      <InfoRow
+                        label="button"
+                        value={
+                          version.showButton
+                            ? `${version.buttonText ?? "-"} / ${version.buttonUrl ?? "-"}`
+                            : "-"
+                        }
+                      />
+                    </CardContent>
+                  </Card>
 
-                        <Stack gap="1">
-                          <Text color="fg.muted" fontSize="sm">
-                            title
-                          </Text>
-                          <Text>{version.title ?? "-"}</Text>
-                        </Stack>
-
-                        <Stack gap="1">
-                          <Text color="fg.muted" fontSize="sm">
-                            message
-                          </Text>
-                          <Text whiteSpace="pre-wrap">
-                            {version.message ?? "-"}
-                          </Text>
-                        </Stack>
-
-                        <Stack gap="1">
-                          <Text color="fg.muted" fontSize="sm">
-                            button
-                          </Text>
-                          <Text>
-                            {version.showButton
-                              ? `${version.buttonText ?? "-"} / ${version.buttonUrl ?? "-"}`
-                              : "-"}
-                          </Text>
-                        </Stack>
-                      </Stack>
-                    </Card.Body>
-                  </Card.Root>
-
-                  <Card.Root>
-                    <Card.Header>
-                      <Heading size="md">저장 전 체크</Heading>
-                    </Card.Header>
-                    <Card.Body>
-                      <Stack gap="3">
-                        <Text color="fg.muted" fontSize="sm">
-                          Spring 검증 규칙과 동일하게 버튼을 노출할 때는
-                          buttonText, buttonUrl이 모두 필요합니다.
-                        </Text>
-                        <Text color="fg.muted" fontSize="sm">
-                          저장 후에는 public GET /v1/app-versions/{platform}
-                          응답을 다시 불러와 화면을 갱신합니다.
-                        </Text>
-                        {validationError && platform === activePlatform ? (
-                          <Alert.Root status="warning">
-                            <Alert.Indicator />
-                            <Alert.Content>
-                              <Alert.Title>저장 전 확인 필요</Alert.Title>
-                              <Alert.Description>{validationError}</Alert.Description>
-                            </Alert.Content>
-                          </Alert.Root>
-                        ) : null}
-                      </Stack>
-                    </Card.Body>
-                  </Card.Root>
-                </Stack>
-              </Grid>
-            </Tabs.Content>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>저장 전 체크</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-muted-foreground">
+                      <p>
+                        Spring 검증 규칙과 동일하게 버튼을 노출할 때는 buttonText,
+                        buttonUrl이 모두 필요합니다.
+                      </p>
+                      <p>
+                        저장 후에는 public{" "}
+                        <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                          GET /v1/app-versions/{platform}
+                        </code>{" "}
+                        응답을 다시 불러와 화면을 갱신합니다.
+                      </p>
+                      {validationError && platform === activePlatform ? (
+                        <Alert>
+                          <Smartphone className="size-4" />
+                          <AlertTitle>저장 전 확인 필요</AlertTitle>
+                          <AlertDescription>{validationError}</AlertDescription>
+                        </Alert>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
           );
         })}
-      </Tabs.Root>
-    </Stack>
+      </Tabs>
+    </div>
   );
 }

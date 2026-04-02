@@ -1,28 +1,54 @@
 "use client";
 
 import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Input,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+  AlertCircle,
+  CheckCircle2,
+  TriangleAlert,
+} from "lucide-react";
+import { FormField } from "@/components/admin/form-field";
+import {
+  InlineGroup,
+  PageStack,
+  ResponsiveGrid,
+  SectionStack,
+  TwoColumnGrid,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
 import { formatDateTime } from "@/lib/format/date";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import type {
   ApiResponse,
   LegalDocumentAdminResponse,
@@ -499,94 +525,99 @@ export default function LegalDocumentsPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="2">
-        <Heading size="xl">법적 문서 관리</Heading>
-        <Text color="fg.muted">
+    <PageStack>
+      <SectionStack className="gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">법적 문서 관리</h1>
+        <p className="text-sm text-muted-foreground">
           `termsOfUse`, `privacyPolicy` 두 고정 문서를 Spring 관리자 API에 맞춰
           생성/전체 수정/삭제합니다. 저장되지 않은 문서 키도 미리 선택해 작성할 수
           있습니다.
-        </Text>
-      </Stack>
+        </p>
+      </SectionStack>
 
-      <Grid gap="6" templateColumns={{ base: "1fr", xl: "0.9fr 1.1fr" }}>
-        <Stack gap="6">
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">문서 키 상태</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Table.Root interactive size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>문서</Table.ColumnHeader>
-                    <Table.ColumnHeader>상태</Table.ColumnHeader>
-                    <Table.ColumnHeader>수정 시각</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <SectionStack className="gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>문서 키 상태</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>문서</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>수정 시각</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {documentKeys.map((documentKey) => {
                     const summary = summaryByKey[documentKey];
                     const isSelected = selectedDocumentKey === documentKey;
 
                     return (
-                      <Table.Row
+                      <TableRow
                         key={documentKey}
-                        bg={isSelected ? "bg.subtle" : undefined}
-                        cursor="pointer"
+                        className={
+                          isSelected ? "cursor-pointer bg-muted/40" : "cursor-pointer"
+                        }
                         onClick={() => setSelectedDocumentKey(documentKey)}
                       >
-                        <Table.Cell>
-                          <Stack gap="1">
-                            <Text fontWeight="semibold">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-semibold">
                               {documentLabels[documentKey]}
-                            </Text>
-                            <Text color="fg.muted" fontSize="xs">
+                            </p>
+                            <p className="text-xs text-muted-foreground">
                               {documentKey}
-                            </Text>
-                          </Stack>
-                        </Table.Cell>
-                        <Table.Cell>
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           {summary ? (
                             <Badge
-                              colorPalette={summary.isActive ? "green" : "yellow"}
+                              className={
+                                summary.isActive
+                                  ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                  : "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300"
+                              }
                             >
                               {summary.isActive ? "공개중" : "비공개"}
                             </Badge>
                           ) : (
-                            <Badge colorPalette="gray">미생성</Badge>
+                            <Badge variant="secondary">미생성</Badge>
                           )}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text color="fg.muted" fontSize="sm">
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm text-muted-foreground">
                             {summary ? formatDateTime(summary.updatedAt) : "-"}
-                          </Text>
-                        </Table.Cell>
-                      </Table.Row>
+                          </p>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </Table.Body>
-              </Table.Root>
-            </Card.Body>
-          </Card.Root>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">선택한 문서 요약</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="4">
-                <HStack wrap="wrap">
-                  <Badge colorPalette="blue">
+          <Card>
+            <CardHeader>
+              <CardTitle>선택한 문서 요약</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack>
+                <InlineGroup>
+                  <Badge variant="secondary">
                     {documentLabels[selectedDocumentKey]}
                   </Badge>
                   <Badge
-                    colorPalette={
+                    className={
                       selectedDocument
                         ? selectedDocument.isActive
-                          ? "green"
-                          : "yellow"
-                        : "gray"
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+                          : "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300"
+                        : "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300"
                     }
                   >
                     {selectedDocument
@@ -595,209 +626,202 @@ export default function LegalDocumentsPage() {
                         : "비공개"
                       : "미생성"}
                   </Badge>
-                </HStack>
+                </InlineGroup>
 
-                <Stack gap="1">
-                  <Text color="fg.muted" fontSize="sm">
-                    생성 시각
-                  </Text>
-                  <Text>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">생성 시각</p>
+                  <p>
                     {selectedDocument
                       ? formatDateTime(selectedDocument.createdAt)
                       : "-"}
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
 
-                <Stack gap="1">
-                  <Text color="fg.muted" fontSize="sm">
-                    수정 시각
-                  </Text>
-                  <Text>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">수정 시각</p>
+                  <p>
                     {selectedDocument
                       ? formatDateTime(selectedDocument.updatedAt)
                       : "-"}
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
 
-                <Stack gap="1">
-                  <Text color="fg.muted" fontSize="sm">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
                     섹션 수 / 배너 라인 수
-                  </Text>
-                  <Text>
+                  </p>
+                  <p>
                     {selectedDocument
                       ? `${selectedDocument.sections.length}개 / ${selectedDocument.banner.lines.length}개`
                       : "저장된 문서 없음"}
-                  </Text>
-                </Stack>
-              </Stack>
-            </Card.Body>
-          </Card.Root>
-        </Stack>
+                  </p>
+                </div>
+              </SectionStack>
+            </CardContent>
+          </Card>
+        </SectionStack>
 
-        <Stack gap="6">
+        <SectionStack className="gap-6">
           {actionError ? (
-            <Alert.Root status="error">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>작업 실패</Alert.Title>
-                <Alert.Description>{actionError}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>작업 실패</AlertTitle>
+              <AlertDescription>{actionError}</AlertDescription>
+            </Alert>
           ) : null}
 
           {actionSuccess ? (
-            <Alert.Root status="success">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>작업 완료</Alert.Title>
-                <Alert.Description>{actionSuccess}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle>작업 완료</AlertTitle>
+              <AlertDescription>{actionSuccess}</AlertDescription>
+            </Alert>
           ) : null}
 
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">기본 정보</Heading>
-            </Card.Header>
-            <Card.Body>
-              <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
-                <Field.Root>
-                  <Field.Label>문서 제목</Field.Label>
+          <Card>
+            <CardHeader>
+              <CardTitle>기본 정보</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TwoColumnGrid>
+                <FormField label="문서 제목">
                   <Input
                     value={form.title}
                     onChange={(event) => updateForm("title", event.target.value)}
                   />
-                </Field.Root>
+                </FormField>
 
-                <Field.Root>
-                  <Field.Label>공개 여부</Field.Label>
-                  <NativeSelect.Root>
-                    <NativeSelect.Field
-                      value={form.isActive}
-                      onChange={(event) =>
-                        updateForm(
-                          "isActive",
-                          event.target.value as LegalDocumentFormState["isActive"],
-                        )
+                <FormField label="공개 여부">
+                  <Select
+                    value={form.isActive}
+                    onValueChange={(value) =>
+                      updateForm(
+                        "isActive",
+                        value as LegalDocumentFormState["isActive"],
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">true</SelectItem>
+                      <SelectItem value="false">false</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              </TwoColumnGrid>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>상단 배너</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack className="gap-5">
+                <ResponsiveGrid>
+                  <FormField label="iconKey">
+                    <Select
+                      value={form.bannerIconKey}
+                      onValueChange={(value) =>
+                        updateForm("bannerIconKey", value as LegalDocumentBannerIconKey)
                       }
                     >
-                      <option value="true">true</option>
-                      <option value="false">false</option>
-                    </NativeSelect.Field>
-                  </NativeSelect.Root>
-                </Field.Root>
-              </SimpleGrid>
-            </Card.Body>
-          </Card.Root>
-
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">상단 배너</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="5">
-                <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
-                  <Field.Root>
-                    <Field.Label>iconKey</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={form.bannerIconKey}
-                        onChange={(event) =>
-                          updateForm(
-                            "bannerIconKey",
-                            event.target.value as LegalDocumentBannerIconKey,
-                          )
-                        }
-                      >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {bannerIconKeys.map((iconKey) => (
-                          <option key={iconKey} value={iconKey}>
+                          <SelectItem key={iconKey} value={iconKey}>
                             {iconKey}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
 
-                  <Field.Root>
-                    <Field.Label>tone</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={form.bannerTone}
-                        onChange={(event) =>
-                          updateForm(
-                            "bannerTone",
-                            event.target.value as LegalDocumentBannerTone,
-                          )
-                        }
-                      >
+                  <FormField label="tone">
+                    <Select
+                      value={form.bannerTone}
+                      onValueChange={(value) =>
+                        updateForm("bannerTone", value as LegalDocumentBannerTone)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
                         {bannerTones.map((tone) => (
-                          <option key={tone} value={tone}>
+                          <SelectItem key={tone} value={tone}>
                             {tone}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
+                      </SelectContent>
+                    </Select>
+                  </FormField>
 
-                  <Field.Root>
-                    <Field.Label>배너 제목</Field.Label>
+                  <FormField label="배너 제목">
                     <Input
                       value={form.bannerTitle}
                       onChange={(event) =>
                         updateForm("bannerTitle", event.target.value)
                       }
                     />
-                  </Field.Root>
-                </SimpleGrid>
+                  </FormField>
+                </ResponsiveGrid>
 
-                <Stack gap="3">
-                  <HStack justify="space-between" wrap="wrap">
-                    <Text fontWeight="semibold">배너 라인</Text>
+                <SectionStack className="gap-3">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <p className="font-semibold">배너 라인</p>
                     <Button size="sm" variant="outline" onClick={addBannerLine}>
                       라인 추가
                     </Button>
-                  </HStack>
+                  </div>
 
                   {form.bannerLines.map((line, index) => (
-                    <Card.Root key={`${selectedDocumentKey}-banner-${index}`} variant="subtle">
-                      <Card.Body>
-                        <Stack gap="3">
-                          <HStack justify="space-between" wrap="wrap">
-                            <Text fontWeight="medium">라인 {index + 1}</Text>
+                    <Card
+                      key={`${selectedDocumentKey}-banner-${index}`}
+                      className="bg-muted/30"
+                    >
+                      <CardContent className="pt-6">
+                        <SectionStack className="gap-3">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <p className="font-medium">라인 {index + 1}</p>
                             <Button
                               disabled={form.bannerLines.length === 1}
                               size="sm"
-                              variant="ghost"
+                              variant="secondary"
                               onClick={() => removeBannerLine(index)}
                             >
                               삭제
                             </Button>
-                          </HStack>
+                          </div>
 
-                          <SimpleGrid columns={{ base: 1, md: 4 }} gap="4">
-                            <Field.Root>
-                              <Field.Label>tone</Field.Label>
-                              <NativeSelect.Root>
-                                <NativeSelect.Field
-                                  value={line.tone}
-                                  onChange={(event) =>
-                                    updateBannerLine(index, {
-                                      tone:
-                                        event.target.value as LegalDocumentBannerLineTone,
-                                    })
-                                  }
-                                >
+                          <div className="grid gap-4 md:grid-cols-4">
+                            <FormField label="tone">
+                              <Select
+                                value={line.tone}
+                                onValueChange={(value) =>
+                                  updateBannerLine(index, {
+                                    tone: value as LegalDocumentBannerLineTone,
+                                  })
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
                                   {bannerLineTones.map((tone) => (
-                                    <option key={tone} value={tone}>
+                                    <SelectItem key={tone} value={tone}>
                                       {tone}
-                                    </option>
+                                    </SelectItem>
                                   ))}
-                                </NativeSelect.Field>
-                              </NativeSelect.Root>
-                            </Field.Root>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
 
-                            <Field.Root gridColumn={{ md: "span 3" }}>
-                              <Field.Label>text</Field.Label>
+                            <FormField label="text" className="md:col-span-3">
                               <Input
                                 value={line.text}
                                 onChange={(event) =>
@@ -806,51 +830,50 @@ export default function LegalDocumentsPage() {
                                   })
                                 }
                               />
-                            </Field.Root>
-                          </SimpleGrid>
-                        </Stack>
-                      </Card.Body>
-                    </Card.Root>
+                            </FormField>
+                          </div>
+                        </SectionStack>
+                      </CardContent>
+                    </Card>
                   ))}
-                </Stack>
-              </Stack>
-            </Card.Body>
-          </Card.Root>
+                </SectionStack>
+              </SectionStack>
+            </CardContent>
+          </Card>
 
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">본문 섹션</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="4">
-                <HStack justify="space-between" wrap="wrap">
-                  <Text color="fg.muted" fontSize="sm">
+          <Card>
+            <CardHeader>
+              <CardTitle>본문 섹션</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-muted-foreground">
                     각 섹션의 문단은 줄바꿈 기준으로 분리됩니다.
-                  </Text>
+                  </p>
                   <Button size="sm" variant="outline" onClick={addSection}>
                     섹션 추가
                   </Button>
-                </HStack>
+                </div>
 
                 {form.sections.map((section, index) => (
-                  <Card.Root key={`${selectedDocumentKey}-section-${index}`} variant="outline">
-                    <Card.Body>
-                      <Stack gap="4">
-                        <HStack justify="space-between" wrap="wrap">
-                          <Text fontWeight="medium">섹션 {index + 1}</Text>
+                  <Card key={`${selectedDocumentKey}-section-${index}`}>
+                    <CardContent className="pt-6">
+                      <SectionStack>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <p className="font-medium">섹션 {index + 1}</p>
                           <Button
                             disabled={form.sections.length === 1}
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             onClick={() => removeSection(index)}
                           >
                             삭제
                           </Button>
-                        </HStack>
+                        </div>
 
-                        <SimpleGrid columns={{ base: 1, md: 2 }} gap="4">
-                          <Field.Root>
-                            <Field.Label>id</Field.Label>
+                        <TwoColumnGrid>
+                          <FormField label="id">
                             <Input
                               value={section.id}
                               onChange={(event) =>
@@ -858,10 +881,9 @@ export default function LegalDocumentsPage() {
                               }
                               placeholder="article-01"
                             />
-                          </Field.Root>
+                          </FormField>
 
-                          <Field.Root>
-                            <Field.Label>title</Field.Label>
+                          <FormField label="title">
                             <Input
                               value={section.title}
                               onChange={(event) =>
@@ -869,14 +891,12 @@ export default function LegalDocumentsPage() {
                               }
                               placeholder="제1조(목적)"
                             />
-                          </Field.Root>
-                        </SimpleGrid>
+                          </FormField>
+                        </TwoColumnGrid>
 
-                        <Field.Root>
-                          <Field.Label>paragraphs</Field.Label>
+                        <FormField label="paragraphs">
                           <Textarea
-                            autoresize
-                            minH="160px"
+                            className="min-h-[160px]"
                             value={section.paragraphsText}
                             onChange={(event) =>
                               updateSection(index, {
@@ -884,82 +904,80 @@ export default function LegalDocumentsPage() {
                               })
                             }
                           />
-                        </Field.Root>
-                      </Stack>
-                    </Card.Body>
-                  </Card.Root>
+                        </FormField>
+                      </SectionStack>
+                    </CardContent>
+                  </Card>
                 ))}
-              </Stack>
-            </Card.Body>
-          </Card.Root>
+              </SectionStack>
+            </CardContent>
+          </Card>
 
-          <Card.Root>
-            <Card.Header>
-              <Heading size="md">하단 안내 및 작업</Heading>
-            </Card.Header>
-            <Card.Body>
-              <Stack gap="4">
-                <Field.Root>
-                  <Field.Label>footerLines</Field.Label>
+          <Card>
+            <CardHeader>
+              <CardTitle>하단 안내 및 작업</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SectionStack>
+                <FormField
+                  label="footerLines"
+                  hint="비워두면 빈 배열로 저장됩니다. 각 줄이 1개 문구입니다."
+                >
                   <Textarea
-                    autoresize
-                    minH="120px"
+                    className="min-h-[120px]"
                     value={form.footerLinesText}
                     onChange={(event) =>
                       updateForm("footerLinesText", event.target.value)
                     }
                   />
-                  <Field.HelperText>
-                    비워두면 빈 배열로 저장됩니다. 각 줄이 1개 문구입니다.
-                  </Field.HelperText>
-                </Field.Root>
+                </FormField>
 
                 {validationError ? (
-                  <Alert.Root status="warning">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 전 확인 필요</Alert.Title>
-                      <Alert.Description>{validationError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <TriangleAlert className="h-4 w-4" />
+                    <AlertTitle>저장 전 확인 필요</AlertTitle>
+                    <AlertDescription>{validationError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
-                <HStack justify="space-between" wrap="wrap">
-                  <Text color="fg.muted" fontSize="sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-muted-foreground">
                     삭제 후에는 같은 문서 키로 다시 생성할 수 있습니다.
-                  </Text>
-                  <HStack>
+                  </p>
+                  <InlineGroup>
                     <Button
                       disabled={!isDirty || isSavePending || isDeletePending}
-                      variant="ghost"
+                      variant="secondary"
                       onClick={resetForm}
                     >
                       변경 취소
                     </Button>
                     <Button
-                      colorPalette="red"
                       disabled={!selectedDocument}
-                      loading={isDeletePending}
                       variant="outline"
                       onClick={handleDelete}
                     >
-                      삭제
+                      {isDeletePending ? "삭제 중..." : "삭제"}
                     </Button>
                     <Button
-                      colorPalette="blue"
-                      disabled={!isDirty || Boolean(validationError)}
-                      loading={isSavePending}
+                      disabled={!isDirty || Boolean(validationError) || isSavePending}
                       onClick={handleSave}
                     >
-                      {selectedDocument ? "저장" : "생성"}
+                      {isSavePending
+                        ? selectedDocument
+                          ? "저장 중..."
+                          : "생성 중..."
+                        : selectedDocument
+                          ? "저장"
+                          : "생성"}
                     </Button>
-                  </HStack>
-                </HStack>
-              </Stack>
-            </Card.Body>
-          </Card.Root>
-        </Stack>
-      </Grid>
-    </Stack>
+                  </InlineGroup>
+                </div>
+              </SectionStack>
+            </CardContent>
+          </Card>
+        </SectionStack>
+      </div>
+    </PageStack>
   );
 }

@@ -1,24 +1,40 @@
 "use client";
 
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Link,
-  NativeSelect,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+import { AlertCircle, MailQuestion } from "lucide-react";
+import { DetailField } from "@/components/admin/detail-field";
+import { MetricCard } from "@/components/admin/metric-card";
 import { useAuth } from "@/features/auth/auth-context";
-import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
+import {
+  PageErrorState,
+  PageLoadingState,
+} from "@/components/admin/page-status";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
@@ -37,14 +53,14 @@ const statusWorkflow = {
   RESOLVED: ["RESOLVED"],
 } as const;
 
-function statusPalette(status: AdminInquiry["status"]) {
+function statusClasses(status: AdminInquiry["status"]) {
   switch (status) {
     case "PENDING":
-      return "orange";
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300";
     case "IN_PROGRESS":
-      return "blue";
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300";
     case "RESOLVED":
-      return "green";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300";
   }
 }
 
@@ -62,7 +78,7 @@ export default function InquiriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
-  const [isSavePending, startSaveTransition] = useTransition();
+  const [, startSaveTransition] = useTransition();
   const previousSelectedInquiryIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -86,11 +102,11 @@ export default function InquiriesPage() {
           query.set("status", selectedStatus);
         }
 
-        const response = await getAuthorizedJson<
-          ApiResponse<PageResponse<AdminInquiry>>
-        >(user, `${getApiBaseUrl()}/v1/admin/inquiries?${query.toString()}`, {
-          signal: controller.signal,
-        });
+        const response = await getAuthorizedJson<ApiResponse<PageResponse<AdminInquiry>>>(
+          user,
+          `${getApiBaseUrl()}/v1/admin/inquiries?${query.toString()}`,
+          { signal: controller.signal },
+        );
 
         setPageData(response.data);
       } catch {
@@ -223,351 +239,306 @@ export default function InquiriesPage() {
     : (["PENDING", "IN_PROGRESS", "RESOLVED"] as const);
 
   return (
-    <Stack gap="6">
-      <Stack gap="3">
-        <Text
-          fontSize="xs"
-          fontWeight="700"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="gray.500"
-        >
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Support
-        </Text>
-        <Heading size="2xl">문의 운영</Heading>
-        <Text color="gray.600" _dark={{ color: "gray.300" }}>
-          목록 조회와 상태 변경을 모두 현재 Spring Admin API 계약에 맞춰
-          연결했습니다. 상태 전이 규칙은 백엔드 엔티티의
-          `PENDING → IN_PROGRESS/RESOLVED`, `IN_PROGRESS → RESOLVED`
-          흐름을 따릅니다.
-        </Text>
-      </Stack>
+        </p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">문의 운영</h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            목록 조회와 상태 변경을 현재 Spring Admin API 계약에 맞춰 연결했습니다.
+            상태 전이 규칙은 백엔드 엔티티의{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              PENDING → IN_PROGRESS/RESOLVED
+            </code>{" "}
+            및{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              IN_PROGRESS → RESOLVED
+            </code>{" "}
+            흐름을 따릅니다.
+          </p>
+        </div>
+      </div>
 
-      <Grid
-        templateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
-        gap="4"
-      >
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              전체 문의
-            </Text>
-            <Heading size="xl">{pageData?.totalElements ?? 0}</Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 {(pageData?.page ?? 0) + 1}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              진행 중 문의
-            </Text>
-            <Heading size="xl">
-              {inquiries.filter((item) => item.status === "IN_PROGRESS").length}
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              현재 페이지 기준
-            </Text>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              선택된 문의
-            </Text>
-            <Heading size="md">
-              {selectedInquiry?.subject ?? "선택된 문의 없음"}
-            </Heading>
-            <Text fontSize="sm" color="gray.500">
-              {selectedInquiry ? selectedInquiry.id : "목록에서 문의를 선택하세요."}
-            </Text>
-          </Card.Body>
-        </Card.Root>
-      </Grid>
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          label="전체 문의"
+          value={pageData?.totalElements ?? 0}
+          description={`현재 페이지 ${(pageData?.page ?? 0) + 1}`}
+        />
+        <MetricCard
+          label="진행 중 문의"
+          value={inquiries.filter((item) => item.status === "IN_PROGRESS").length}
+          description="현재 페이지 기준"
+        />
+        <MetricCard
+          label="선택된 문의"
+          value={selectedInquiry?.subject ?? "선택된 문의 없음"}
+          description={
+            selectedInquiry ? selectedInquiry.id : "목록에서 문의를 선택하세요."
+          }
+        />
+      </div>
 
-      <Card.Root>
-        <Card.Body>
-          <Field.Root maxW={{ base: "full", md: "320px" }}>
-            <Field.Label>상태 필터</Field.Label>
-            <NativeSelect.Root>
-              <NativeSelect.Field
-                value={selectedStatus}
-                onChange={(event) =>
-                  setSelectedStatus(
-                    event.target.value as (typeof statusOptions)[number],
-                  )
-                }
-              >
+      <Card>
+        <CardHeader>
+          <CardTitle>상태 필터</CardTitle>
+        </CardHeader>
+        <CardContent className="max-w-xs">
+          <div className="space-y-2">
+            <Label>상태</Label>
+            <Select
+              value={selectedStatus}
+              onValueChange={(value) =>
+                setSelectedStatus(value as (typeof statusOptions)[number])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
                 {statusOptions.map((status) => (
-                  <option key={status} value={status}>
+                  <SelectItem key={status} value={status}>
                     {status === "ALL" ? "전체" : status}
-                  </option>
+                  </SelectItem>
                 ))}
-              </NativeSelect.Field>
-            </NativeSelect.Root>
-          </Field.Root>
-        </Card.Body>
-      </Card.Root>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      <Grid
-        templateColumns={{ base: "1fr", xl: "minmax(0, 1.6fr) minmax(360px, 1fr)" }}
-        gap="5"
-      >
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">문의 목록</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
-            <Box overflowX="auto">
-              <Table.Root size="sm">
-                <Table.Header>
-                  <Table.Row>
-                    <Table.ColumnHeader>문의</Table.ColumnHeader>
-                    <Table.ColumnHeader>사용자</Table.ColumnHeader>
-                    <Table.ColumnHeader>상태</Table.ColumnHeader>
-                    <Table.ColumnHeader textAlign="end">생성일</Table.ColumnHeader>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {inquiries.map((inquiry) => {
-                    const active = inquiry.id === selectedInquiry?.id;
-                    return (
-                      <Table.Row
-                        key={inquiry.id}
-                        bg={active ? "orange.50" : undefined}
-                        cursor="pointer"
-                        onClick={() => setSelectedInquiryId(inquiry.id)}
-                        _hover={{ bg: active ? "orange.100" : "blackAlpha.50" }}
-                        _dark={{
-                          bg: active ? "orange.950" : undefined,
-                          _hover: {
-                            bg: active ? "orange.900" : "whiteAlpha.100",
-                          },
-                        }}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(360px,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>문의 목록</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="overflow-hidden rounded-xl border border-border/70">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>문의</TableHead>
+                    <TableHead>사용자</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="text-right">생성일</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inquiries.length ? (
+                    inquiries.map((inquiry) => {
+                      const active = inquiry.id === selectedInquiry?.id;
+                      return (
+                        <TableRow
+                          key={inquiry.id}
+                          className={cn(
+                            "cursor-pointer",
+                            active && "bg-muted/60 hover:bg-muted/60",
+                          )}
+                          onClick={() => setSelectedInquiryId(inquiry.id)}
+                        >
+                          <TableCell>
+                            <div className="space-y-1">
+                              <p className="font-semibold">{inquiry.subject}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {inquiry.type} · 첨부 {inquiry.attachments.length}건
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {inquiry.userName ||
+                              inquiry.userEmail ||
+                              inquiry.memberId}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={statusClasses(inquiry.status)}
+                            >
+                              {inquiry.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatDateTime(inquiry.createdAt)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="py-12 text-center text-sm text-muted-foreground"
                       >
-                        <Table.Cell>
-                          <Stack gap="1" minW={0}>
-                            <Text fontWeight="600">{inquiry.subject}</Text>
-                            <Text fontSize="sm" color="gray.500">
-                              {inquiry.type} · 첨부 {inquiry.attachments.length}건
-                            </Text>
-                          </Stack>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Text>{inquiry.userName || inquiry.userEmail || inquiry.memberId}</Text>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <Badge colorPalette={statusPalette(inquiry.status)}>
-                            {inquiry.status}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell textAlign="end">
-                          {formatDateTime(inquiry.createdAt)}
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table.Root>
-            </Box>
+                        조건에 맞는 문의가 없습니다.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-            {!inquiries.length ? (
-              <Box
-                rounded="2xl"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderColor="blackAlpha.200"
-                p="8"
-                textAlign="center"
-              >
-                <Text>조건에 맞는 문의가 없습니다.</Text>
-              </Box>
-            ) : null}
-          </Card.Body>
-        </Card.Root>
-
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">문의 상세 및 처리</Heading>
-          </Card.Header>
-          <Card.Body gap="5">
+        <Card>
+          <CardHeader>
+            <CardTitle>문의 상세 및 처리</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
             {selectedInquiry ? (
               <>
-                <Stack gap="3">
-                  <HStack justify="space-between" align="start">
-                    <Stack gap="1">
-                      <Text fontSize="sm" color="gray.500">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
                         {selectedInquiry.type}
-                      </Text>
-                      <Heading size="md">{selectedInquiry.subject}</Heading>
-                    </Stack>
-                    <Badge colorPalette={statusPalette(selectedInquiry.status)}>
+                      </p>
+                      <h2 className="text-lg font-semibold">
+                        {selectedInquiry.subject}
+                      </h2>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={statusClasses(selectedInquiry.status)}
+                    >
                       {selectedInquiry.status}
                     </Badge>
-                  </HStack>
-                  <Text color="gray.700" _dark={{ color: "gray.200" }}>
+                  </div>
+                  <p className="text-sm leading-6 text-foreground/90">
                     {selectedInquiry.content}
-                  </Text>
-                </Stack>
+                  </p>
+                </div>
 
-                <Grid
-                  templateColumns={{ base: "1fr", md: "repeat(2, minmax(0, 1fr))" }}
-                  gap="3"
-                >
-                  <Box>
-                    <Text fontSize="sm" color="gray.500">
-                      사용자
-                    </Text>
-                    <Text>
-                      {selectedInquiry.userName ||
-                        selectedInquiry.userEmail ||
-                        selectedInquiry.memberId}
-                    </Text>
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" color="gray.500">
-                      학번
-                    </Text>
-                    <Text>{selectedInquiry.userStudentId || "-"}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" color="gray.500">
-                      생성일
-                    </Text>
-                    <Text>{formatDateTime(selectedInquiry.createdAt)}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" color="gray.500">
-                      수정일
-                    </Text>
-                    <Text>{formatDateTime(selectedInquiry.updatedAt)}</Text>
-                  </Box>
-                </Grid>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <DetailField
+                    label="사용자"
+                    value={
+                      selectedInquiry.userName ||
+                      selectedInquiry.userEmail ||
+                      selectedInquiry.memberId
+                    }
+                  />
+                  <DetailField
+                    label="학번"
+                    value={selectedInquiry.userStudentId || "-"}
+                  />
+                  <DetailField
+                    label="생성일"
+                    value={formatDateTime(selectedInquiry.createdAt)}
+                  />
+                  <DetailField
+                    label="수정일"
+                    value={formatDateTime(selectedInquiry.updatedAt)}
+                  />
+                </div>
 
-                <Box
-                  rounded="xl"
-                  borderWidth="1px"
-                  borderColor="blackAlpha.100"
-                  bg="blackAlpha.50"
-                  p="4"
-                  _dark={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.200" }}
-                >
-                  <Stack gap="2">
-                    <Text fontSize="sm" fontWeight="600">
-                      첨부 파일
-                    </Text>
-                    {selectedInquiry.attachments.length ? (
-                      <Stack gap="1">
-                        {selectedInquiry.attachments.map((attachment) => (
-                          <Link
-                            key={attachment.url}
-                            href={attachment.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            color="orange.500"
-                          >
-                            {attachment.mime || "첨부 파일"} · {attachment.size ?? "-"} bytes
-                          </Link>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <Text color="gray.500">첨부 파일이 없습니다.</Text>
-                    )}
-                  </Stack>
-                </Box>
+                <div className="space-y-2 rounded-2xl border border-border/70 bg-muted/30 p-4">
+                  <p className="text-sm font-semibold">첨부 파일</p>
+                  {selectedInquiry.attachments.length ? (
+                    <div className="space-y-1">
+                      {selectedInquiry.attachments.map((attachment) => (
+                        <a
+                          key={attachment.url}
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block text-sm text-orange-600 underline underline-offset-4"
+                        >
+                          {attachment.mime || "첨부 파일"} · {attachment.size ?? "-"} bytes
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      첨부 파일이 없습니다.
+                    </p>
+                  )}
+                </div>
 
-                <Field.Root>
-                  <Field.Label>변경할 상태</Field.Label>
-                  <NativeSelect.Root>
-                    <NativeSelect.Field
-                      value={draftStatus}
-                      onChange={(event) =>
-                        setDraftStatus(
-                          event.target.value as AdminInquiry["status"],
-                        )
-                      }
-                    >
+                <div className="space-y-2">
+                  <Label>변경할 상태</Label>
+                  <Select
+                    value={draftStatus}
+                    onValueChange={(value) =>
+                      setDraftStatus(value as AdminInquiry["status"])
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
                       {statusOptions
                         .filter(
-                          (status): status is AdminInquiry["status"] =>
-                            status !== "ALL",
+                          (status): status is AdminInquiry["status"] => status !== "ALL",
                         )
                         .map((status) => (
-                          <option
+                          <SelectItem
                             key={status}
                             value={status}
                             disabled={!allowedStatuses.includes(status)}
                           >
                             {status}
-                          </option>
+                          </SelectItem>
                         ))}
-                    </NativeSelect.Field>
-                  </NativeSelect.Root>
-                </Field.Root>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <Field.Root>
-                  <Field.Label>운영 메모</Field.Label>
+                <div className="space-y-2">
+                  <Label htmlFor="inquiry-memo">운영 메모</Label>
                   <Textarea
+                    id="inquiry-memo"
+                    className="min-h-40"
                     value={draftMemo}
                     onChange={(event) => setDraftMemo(event.target.value)}
                     placeholder="처리 내용이나 후속 조치를 남겨주세요."
-                    autoresize
-                    maxH="12lh"
                   />
-                  <Field.HelperText>{draftMemo.length} / 500</Field.HelperText>
-                </Field.Root>
+                  <p className="text-xs text-muted-foreground">
+                    {draftMemo.length} / 500
+                  </p>
+                </div>
 
                 {saveSuccess ? (
-                  <Alert.Root status="success" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 완료</Alert.Title>
-                      <Alert.Description>{saveSuccess}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert>
+                    <MailQuestion className="size-4" />
+                    <AlertTitle>저장 완료</AlertTitle>
+                    <AlertDescription>{saveSuccess}</AlertDescription>
+                  </Alert>
                 ) : null}
 
                 {saveError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 실패</Alert.Title>
-                      <Alert.Description>{saveError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
+                  <Alert variant="destructive">
+                    <AlertCircle className="size-4" />
+                    <AlertTitle>저장 실패</AlertTitle>
+                    <AlertDescription>{saveError}</AlertDescription>
+                  </Alert>
                 ) : null}
 
-                <HStack justify="space-between" align="center">
-                  <Text fontSize="sm" color="gray.500" maxW="xs">
-                    `memo`는 백엔드에서 `trimToNull` 처리되므로 공백만 입력하면
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="max-w-xs text-sm text-muted-foreground">
+                    <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                      memo
+                    </code>
+                    는 백엔드에서 <code>trimToNull</code> 처리되므로 공백만 입력하면
                     null로 저장됩니다.
-                  </Text>
+                  </p>
                   <Button
-                    colorPalette="orange"
                     onClick={handleUpdateInquiry}
-                    loading={isSavePending}
                     disabled={!hasPendingChanges || draftMemo.length > 500}
                   >
                     상태 저장
                   </Button>
-                </HStack>
+                </div>
               </>
             ) : (
-              <Box
-                rounded="2xl"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderColor="blackAlpha.200"
-                p="8"
-                textAlign="center"
-              >
-                <Text>문의가 없어서 상세 정보를 표시할 수 없습니다.</Text>
-              </Box>
+              <p className="text-sm text-muted-foreground">
+                문의가 없어서 상세 정보를 표시할 수 없습니다.
+              </p>
             )}
-          </Card.Body>
-        </Card.Root>
-      </Grid>
-    </Stack>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

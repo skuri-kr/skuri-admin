@@ -1,30 +1,56 @@
 "use client";
 
+import Image from "next/image";
 import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Field,
-  Grid,
-  Heading,
-  HStack,
-  Image,
-  Input,
-  NativeSelect,
-  SimpleGrid,
-  Stack,
-  Table,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+  AlertCircle,
+  CheckCircle2,
+  ImagePlus,
+  MoveVertical,
+} from "lucide-react";
+import { FormField } from "@/components/admin/form-field";
+import {
+  InlineGroup,
+  PageStack,
+  ResponsiveGrid,
+  SectionStack,
+  TwoColumnGrid,
+} from "@/components/admin/layout";
 import { useAuth } from "@/features/auth/auth-context";
 import { PageErrorState, PageLoadingState } from "@/components/admin/page-status";
 import { getAuthorizedJson } from "@/lib/api/authenticated-client";
 import { uploadAuthorizedImage } from "@/lib/api/image-upload";
 import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import {
   formatDateTime,
   fromDateTimeLocalInputValue,
@@ -635,745 +661,221 @@ export default function CampusBannersPage() {
   };
 
   return (
-    <Stack gap="6">
-      <Stack gap="3">
-        <Text
-          fontSize="xs"
-          fontWeight="700"
-          letterSpacing="0.18em"
-          textTransform="uppercase"
-          color="gray.500"
-        >
+    <PageStack>
+      <SectionStack className="gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Campus
-        </Text>
-        <Heading size="2xl">캠퍼스 배너 관리</Heading>
-        <Text color="gray.600" _dark={{ color: "gray.300" }}>
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight">캠퍼스 배너 관리</h1>
+        <p className="text-sm text-muted-foreground">
           배너 생성, 수정, 삭제와 순서 변경을 현재 Spring 계약에 맞춰 연결했습니다.
           `actionType` 제약과 `actionParams` JSON object 규칙도 백엔드와 동일하게
           검증합니다.
-        </Text>
-      </Stack>
+        </p>
+      </SectionStack>
 
-      <SimpleGrid columns={{ base: 1, md: 3 }} gap="4">
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              전체 배너
-            </Text>
-            <Heading size="xl">{items.length}</Heading>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              활성 배너
-            </Text>
-            <Heading size="xl">
-              {items.filter((item) => item.isActive).length}
-            </Heading>
-          </Card.Body>
-        </Card.Root>
-        <Card.Root>
-          <Card.Body gap="1">
-            <Text fontSize="sm" color="gray.500">
-              순서 변경 대기
-            </Text>
-            <Heading size="xl">{isOrderDirty ? "Yes" : "No"}</Heading>
-          </Card.Body>
-        </Card.Root>
-      </SimpleGrid>
+      <ResponsiveGrid>
+        <Card><CardContent className="space-y-1 pt-6"><p className="text-sm text-muted-foreground">전체 배너</p><p className="text-3xl font-semibold">{items.length}</p></CardContent></Card>
+        <Card><CardContent className="space-y-1 pt-6"><p className="text-sm text-muted-foreground">활성 배너</p><p className="text-3xl font-semibold">{items.filter((item) => item.isActive).length}</p></CardContent></Card>
+        <Card><CardContent className="space-y-1 pt-6"><p className="text-sm text-muted-foreground">순서 변경 대기</p><p className="text-3xl font-semibold">{isOrderDirty ? "Yes" : "No"}</p></CardContent></Card>
+      </ResponsiveGrid>
 
-      <Grid
-        templateColumns={{ base: "1fr", xl: "minmax(0, 1fr) minmax(0, 1fr)" }}
-        gap="5"
-      >
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">배너 생성</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>배지 라벨</Field.Label>
-                <Input
-                  value={createForm.badgeLabel}
-                  onChange={(event) =>
-                    updateCreateForm("badgeLabel", event.target.value)
-                  }
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>제목 라벨</Field.Label>
-                <Input
-                  value={createForm.titleLabel}
-                  onChange={(event) =>
-                    updateCreateForm("titleLabel", event.target.value)
-                  }
-                />
-              </Field.Root>
-            </Grid>
-
-            <Field.Root>
-              <Field.Label>설명 라벨</Field.Label>
-              <Textarea
-                value={createForm.descriptionLabel}
-                onChange={(event) =>
-                  updateCreateForm("descriptionLabel", event.target.value)
-                }
-                autoresize
-                maxH="10lh"
-              />
-            </Field.Root>
-
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>버튼 라벨</Field.Label>
-                <Input
-                  value={createForm.buttonLabel}
-                  onChange={(event) =>
-                    updateCreateForm("buttonLabel", event.target.value)
-                  }
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>팔레트</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={createForm.paletteKey}
-                    onChange={(event) =>
-                      updateCreateForm(
-                        "paletteKey",
-                        event.target.value as CampusBanner["paletteKey"],
-                      )
-                    }
-                  >
-                    {bannerPaletteKeys.map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                </NativeSelect.Root>
-              </Field.Root>
-            </Grid>
-
-            <Field.Root>
-              <Field.Label>배너 이미지 업로드</Field.Label>
-              <Input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  event.target.value = "";
-                  void handleCreateImageUpload(file);
-                }}
-              />
-              <Field.HelperText>
-                JPEG, PNG, WebP 업로드를 지원합니다.
-                {isCreateImageUploading ? " 업로드 중입니다." : ""}
-              </Field.HelperText>
-            </Field.Root>
-
-            {createImageUploadError ? (
-              <Alert.Root status="error" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>이미지 업로드 실패</Alert.Title>
-                  <Alert.Description>{createImageUploadError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
-            ) : null}
-
-            {createForm.imageUrl ? (
-              <Image
-                src={createForm.imageUrl}
-                alt="생성할 캠퍼스 배너 미리보기"
-                rounded="xl"
-                h="180px"
-                w="full"
-                objectFit="cover"
-              />
-            ) : (
-              <Text fontSize="sm" color="gray.500">
-                업로드한 이미지가 여기 미리보기로 표시됩니다.
-              </Text>
-            )}
-
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>액션 타입</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={createForm.actionType}
-                    onChange={(event) =>
-                      updateCreateActionType(
-                        event.target.value as CampusBanner["actionType"],
-                      )
-                    }
-                  >
-                    {bannerActionTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </NativeSelect.Field>
-                </NativeSelect.Root>
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>활성 여부</Field.Label>
-                <NativeSelect.Root>
-                  <NativeSelect.Field
-                    value={createForm.isActive}
-                    onChange={(event) =>
-                      updateCreateForm(
-                        "isActive",
-                        event.target.value as "true" | "false",
-                      )
-                    }
-                  >
-                    <option value="true">활성</option>
-                    <option value="false">비활성</option>
-                  </NativeSelect.Field>
-                </NativeSelect.Root>
-              </Field.Root>
-            </Grid>
-
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>배너 생성</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <TwoColumnGrid>
+              <FormField label="배지 라벨"><Input value={createForm.badgeLabel} onChange={(event) => updateCreateForm("badgeLabel", event.target.value)} /></FormField>
+              <FormField label="제목 라벨"><Input value={createForm.titleLabel} onChange={(event) => updateCreateForm("titleLabel", event.target.value)} /></FormField>
+            </TwoColumnGrid>
+            <FormField label="설명 라벨"><Textarea className="max-h-[10lh] min-h-[140px]" value={createForm.descriptionLabel} onChange={(event) => updateCreateForm("descriptionLabel", event.target.value)} /></FormField>
+            <TwoColumnGrid>
+              <FormField label="버튼 라벨"><Input value={createForm.buttonLabel} onChange={(event) => updateCreateForm("buttonLabel", event.target.value)} /></FormField>
+              <FormField label="팔레트">
+                <Select value={createForm.paletteKey} onValueChange={(value) => updateCreateForm("paletteKey", value as CampusBanner["paletteKey"])}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{bannerPaletteKeys.map((key) => <SelectItem key={key} value={key}>{key}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
+            </TwoColumnGrid>
+            <FormField label="배너 이미지 업로드" hint={`JPEG, PNG, WebP 업로드를 지원합니다.${isCreateImageUploading ? " 업로드 중입니다." : ""}`}>
+              <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ""; void handleCreateImageUpload(file); }} />
+            </FormField>
+            {createImageUploadError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>이미지 업로드 실패</AlertTitle><AlertDescription>{createImageUploadError}</AlertDescription></Alert> : null}
+            {createForm.imageUrl ? <div className="relative h-[180px] overflow-hidden rounded-xl"><Image src={createForm.imageUrl} alt="생성할 캠퍼스 배너 미리보기" fill className="object-cover" /></div> : <p className="text-sm text-muted-foreground">업로드한 이미지가 여기 미리보기로 표시됩니다.</p>}
+            <TwoColumnGrid>
+              <FormField label="액션 타입">
+                <Select value={createForm.actionType} onValueChange={(value) => updateCreateActionType(value as CampusBanner["actionType"])}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{bannerActionTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+                </Select>
+              </FormField>
+              <FormField label="활성 여부">
+                <Select value={createForm.isActive} onValueChange={(value) => updateCreateForm("isActive", value as "true" | "false")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="true">활성</SelectItem><SelectItem value="false">비활성</SelectItem></SelectContent>
+                </Select>
+              </FormField>
+            </TwoColumnGrid>
             {createForm.actionType === "IN_APP" ? (
               <>
-                <Field.Root>
-                  <Field.Label>인앱 이동 대상</Field.Label>
-                  <NativeSelect.Root>
-                    <NativeSelect.Field
-                      value={createForm.actionTarget}
-                      onChange={(event) =>
-                        updateCreateForm(
-                          "actionTarget",
-                          event.target.value as CampusBannerFormState["actionTarget"],
-                        )
-                      }
-                    >
-                      {bannerActionTargets.map((target) => (
-                        <option key={target} value={target}>
-                          {target}
-                        </option>
-                      ))}
-                    </NativeSelect.Field>
-                  </NativeSelect.Root>
-                </Field.Root>
-                <Field.Root invalid={Boolean(createActionParamsError)}>
-                  <Field.Label>추가 파라미터 JSON</Field.Label>
-                  <Textarea
-                    value={createForm.actionParamsText}
-                    onChange={(event) =>
-                      updateCreateForm("actionParamsText", event.target.value)
-                    }
-                    placeholder='{"initialView":"all"}'
-                    autoresize
-                    maxH="10lh"
-                  />
-                  <Field.HelperText>
-                    비워 두면 `null`로 전송됩니다.
-                  </Field.HelperText>
-                </Field.Root>
+                <FormField label="인앱 이동 대상">
+                  <Select value={createForm.actionTarget} onValueChange={(value) => updateCreateForm("actionTarget", value as CampusBannerFormState["actionTarget"])}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{bannerActionTargets.map((target) => <SelectItem key={target} value={target}>{target}</SelectItem>)}</SelectContent>
+                  </Select>
+                </FormField>
+                <FormField label="추가 파라미터 JSON" hint="비워 두면 `null`로 전송됩니다.">
+                  <Textarea className="max-h-[10lh] min-h-[140px]" value={createForm.actionParamsText} onChange={(event) => updateCreateForm("actionParamsText", event.target.value)} placeholder='{"initialView":"all"}' />
+                </FormField>
               </>
             ) : (
-              <Field.Root>
-                <Field.Label>외부 이동 URL</Field.Label>
-                <Input
-                  value={createForm.actionUrl}
-                  onChange={(event) =>
-                    updateCreateForm("actionUrl", event.target.value)
-                  }
-                  placeholder="https://www.sungkyul.ac.kr"
-                />
-              </Field.Root>
+              <FormField label="외부 이동 URL"><Input value={createForm.actionUrl} onChange={(event) => updateCreateForm("actionUrl", event.target.value)} placeholder="https://www.sungkyul.ac.kr" /></FormField>
             )}
-
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-              <Field.Root>
-                <Field.Label>노출 시작 시각</Field.Label>
-                <Input
-                  type="datetime-local"
-                  value={createForm.displayStartAt}
-                  onChange={(event) =>
-                    updateCreateForm("displayStartAt", event.target.value)
-                  }
-                />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>노출 종료 시각</Field.Label>
-                <Input
-                  type="datetime-local"
-                  value={createForm.displayEndAt}
-                  onChange={(event) =>
-                    updateCreateForm("displayEndAt", event.target.value)
-                  }
-                />
-              </Field.Root>
-            </Grid>
-
-            {createSuccess ? (
-              <Alert.Root status="success" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>생성 완료</Alert.Title>
-                  <Alert.Description>{createSuccess}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
-            ) : null}
-
-            {createError ? (
-              <Alert.Root status="error" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>생성 실패</Alert.Title>
-                  <Alert.Description>{createError}</Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
-            ) : null}
-
-            <Button
-              colorPalette="orange"
-              onClick={handleCreate}
-              loading={isCreatePending}
-              disabled={Boolean(createValidationError) || isCreateImageUploading}
-            >
-              배너 생성
+            <TwoColumnGrid>
+              <FormField label="노출 시작 시각"><Input type="datetime-local" value={createForm.displayStartAt} onChange={(event) => updateCreateForm("displayStartAt", event.target.value)} /></FormField>
+              <FormField label="노출 종료 시각"><Input type="datetime-local" value={createForm.displayEndAt} onChange={(event) => updateCreateForm("displayEndAt", event.target.value)} /></FormField>
+            </TwoColumnGrid>
+            {createSuccess ? <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>생성 완료</AlertTitle><AlertDescription>{createSuccess}</AlertDescription></Alert> : null}
+            {createError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>생성 실패</AlertTitle><AlertDescription>{createError}</AlertDescription></Alert> : null}
+            <Button onClick={handleCreate} disabled={Boolean(createValidationError) || isCreateImageUploading || isCreatePending}>
+              <ImagePlus className="mr-2 h-4 w-4" />
+              {isCreatePending ? "배너 생성 중..." : "배너 생성"}
             </Button>
-          </Card.Body>
-        </Card.Root>
+          </CardContent>
+        </Card>
 
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">선택 배너 수정</Heading>
-          </Card.Header>
-          <Card.Body gap="4">
+        <Card>
+          <CardHeader><CardTitle>선택 배너 수정</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
             {selectedBanner ? (
               <>
-                <HStack justify="space-between" align="start">
-                  <Stack gap="1">
-                    <Text fontSize="sm" color="gray.500">
-                      선택된 배너
-                    </Text>
-                    <Heading size="sm">{selectedBanner.titleLabel}</Heading>
-                  </Stack>
-                  <HStack gap="2">
-                    <Badge colorPalette={selectedBanner.isActive ? "green" : "gray"}>
-                      {selectedBanner.isActive ? "ACTIVE" : "INACTIVE"}
-                    </Badge>
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-1"><p className="text-sm text-muted-foreground">선택된 배너</p><p className="text-lg font-semibold">{selectedBanner.titleLabel}</p></div>
+                  <InlineGroup>
+                    <Badge className={selectedBanner.isActive ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300" : "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300"}>{selectedBanner.isActive ? "ACTIVE" : "INACTIVE"}</Badge>
                     <Badge variant="outline">#{selectedBanner.displayOrder}</Badge>
-                  </HStack>
-                </HStack>
-
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>배지 라벨</Field.Label>
-                    <Input
-                      value={editForm.badgeLabel}
-                      onChange={(event) =>
-                        updateEditForm("badgeLabel", event.target.value)
-                      }
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>제목 라벨</Field.Label>
-                    <Input
-                      value={editForm.titleLabel}
-                      onChange={(event) =>
-                        updateEditForm("titleLabel", event.target.value)
-                      }
-                    />
-                  </Field.Root>
-                </Grid>
-
-                <Field.Root>
-                  <Field.Label>설명 라벨</Field.Label>
-                  <Textarea
-                    value={editForm.descriptionLabel}
-                    onChange={(event) =>
-                      updateEditForm("descriptionLabel", event.target.value)
-                    }
-                    autoresize
-                    maxH="10lh"
-                  />
-                </Field.Root>
-
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>버튼 라벨</Field.Label>
-                    <Input
-                      value={editForm.buttonLabel}
-                      onChange={(event) =>
-                        updateEditForm("buttonLabel", event.target.value)
-                      }
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>팔레트</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={editForm.paletteKey}
-                        onChange={(event) =>
-                          updateEditForm(
-                            "paletteKey",
-                            event.target.value as CampusBanner["paletteKey"],
-                          )
-                        }
-                      >
-                        {bannerPaletteKeys.map((key) => (
-                          <option key={key} value={key}>
-                            {key}
-                          </option>
-                        ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
-                </Grid>
-
-                <Field.Root>
-                  <Field.Label>배너 이미지 교체</Field.Label>
-                  <Input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0] ?? null;
-                      event.target.value = "";
-                      void handleEditImageUpload(file);
-                    }}
-                  />
-                  <Field.HelperText>
-                    새 이미지를 업로드하면 현재 배너 이미지를 교체합니다.
-                  </Field.HelperText>
-                </Field.Root>
-
-                {editImageUploadError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>이미지 업로드 실패</Alert.Title>
-                      <Alert.Description>{editImageUploadError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
-                ) : null}
-
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>액션 타입</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={editForm.actionType}
-                        onChange={(event) =>
-                          updateEditActionType(
-                            event.target.value as CampusBanner["actionType"],
-                          )
-                        }
-                      >
-                        {bannerActionTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>활성 여부</Field.Label>
-                    <NativeSelect.Root>
-                      <NativeSelect.Field
-                        value={editForm.isActive}
-                        onChange={(event) =>
-                          updateEditForm(
-                            "isActive",
-                            event.target.value as "true" | "false",
-                          )
-                        }
-                      >
-                        <option value="true">활성</option>
-                        <option value="false">비활성</option>
-                      </NativeSelect.Field>
-                    </NativeSelect.Root>
-                  </Field.Root>
-                </Grid>
-
+                  </InlineGroup>
+                </div>
+                <TwoColumnGrid>
+                  <FormField label="배지 라벨"><Input value={editForm.badgeLabel} onChange={(event) => updateEditForm("badgeLabel", event.target.value)} /></FormField>
+                  <FormField label="제목 라벨"><Input value={editForm.titleLabel} onChange={(event) => updateEditForm("titleLabel", event.target.value)} /></FormField>
+                </TwoColumnGrid>
+                <FormField label="설명 라벨"><Textarea className="max-h-[10lh] min-h-[140px]" value={editForm.descriptionLabel} onChange={(event) => updateEditForm("descriptionLabel", event.target.value)} /></FormField>
+                <TwoColumnGrid>
+                  <FormField label="버튼 라벨"><Input value={editForm.buttonLabel} onChange={(event) => updateEditForm("buttonLabel", event.target.value)} /></FormField>
+                  <FormField label="팔레트">
+                    <Select value={editForm.paletteKey} onValueChange={(value) => updateEditForm("paletteKey", value as CampusBanner["paletteKey"])}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{bannerPaletteKeys.map((key) => <SelectItem key={key} value={key}>{key}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </FormField>
+                </TwoColumnGrid>
+                <FormField label="배너 이미지 교체" hint="새 이미지를 업로드하면 현재 배너 이미지를 교체합니다.">
+                  <Input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; event.target.value = ""; void handleEditImageUpload(file); }} />
+                </FormField>
+                {editImageUploadError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>이미지 업로드 실패</AlertTitle><AlertDescription>{editImageUploadError}</AlertDescription></Alert> : null}
+                <TwoColumnGrid>
+                  <FormField label="액션 타입">
+                    <Select value={editForm.actionType} onValueChange={(value) => updateEditActionType(value as CampusBanner["actionType"])}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{bannerActionTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </FormField>
+                  <FormField label="활성 여부">
+                    <Select value={editForm.isActive} onValueChange={(value) => updateEditForm("isActive", value as "true" | "false")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="true">활성</SelectItem><SelectItem value="false">비활성</SelectItem></SelectContent>
+                    </Select>
+                  </FormField>
+                </TwoColumnGrid>
                 {editForm.actionType === "IN_APP" ? (
                   <>
-                    <Field.Root>
-                      <Field.Label>인앱 이동 대상</Field.Label>
-                      <NativeSelect.Root>
-                        <NativeSelect.Field
-                          value={editForm.actionTarget}
-                          onChange={(event) =>
-                            updateEditForm(
-                              "actionTarget",
-                              event.target.value as CampusBannerFormState["actionTarget"],
-                            )
-                          }
-                        >
-                          {bannerActionTargets.map((target) => (
-                            <option key={target} value={target}>
-                              {target}
-                            </option>
-                          ))}
-                        </NativeSelect.Field>
-                      </NativeSelect.Root>
-                    </Field.Root>
-                    <Field.Root invalid={Boolean(editActionParamsError)}>
-                      <Field.Label>추가 파라미터 JSON</Field.Label>
-                      <Textarea
-                        value={editForm.actionParamsText}
-                        onChange={(event) =>
-                          updateEditForm("actionParamsText", event.target.value)
-                        }
-                        autoresize
-                        maxH="10lh"
-                      />
-                    </Field.Root>
+                    <FormField label="인앱 이동 대상">
+                      <Select value={editForm.actionTarget} onValueChange={(value) => updateEditForm("actionTarget", value as CampusBannerFormState["actionTarget"])}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{bannerActionTargets.map((target) => <SelectItem key={target} value={target}>{target}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </FormField>
+                    <FormField label="추가 파라미터 JSON"><Textarea className="max-h-[10lh] min-h-[140px]" value={editForm.actionParamsText} onChange={(event) => updateEditForm("actionParamsText", event.target.value)} /></FormField>
                   </>
                 ) : (
-                  <Field.Root>
-                    <Field.Label>외부 이동 URL</Field.Label>
-                    <Input
-                      value={editForm.actionUrl}
-                      onChange={(event) =>
-                        updateEditForm("actionUrl", event.target.value)
-                      }
-                    />
-                  </Field.Root>
+                  <FormField label="외부 이동 URL"><Input value={editForm.actionUrl} onChange={(event) => updateEditForm("actionUrl", event.target.value)} /></FormField>
                 )}
-
-                <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap="4">
-                  <Field.Root>
-                    <Field.Label>노출 시작 시각</Field.Label>
-                    <Input
-                      type="datetime-local"
-                      value={editForm.displayStartAt}
-                      onChange={(event) =>
-                        updateEditForm("displayStartAt", event.target.value)
-                      }
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>노출 종료 시각</Field.Label>
-                    <Input
-                      type="datetime-local"
-                      value={editForm.displayEndAt}
-                      onChange={(event) =>
-                        updateEditForm("displayEndAt", event.target.value)
-                      }
-                    />
-                  </Field.Root>
-                </Grid>
-
-                {editForm.imageUrl ? (
-                  <Image
-                    src={editForm.imageUrl}
-                    alt={selectedBanner.titleLabel}
-                    rounded="xl"
-                    h="180px"
-                    w="full"
-                    objectFit="cover"
-                  />
-                ) : null}
-
-                {editSuccess ? (
-                  <Alert.Root status="success" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 완료</Alert.Title>
-                      <Alert.Description>{editSuccess}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
-                ) : null}
-
-                {editError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>저장 실패</Alert.Title>
-                      <Alert.Description>{editError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
-                ) : null}
-
-                {deleteError ? (
-                  <Alert.Root status="error" rounded="xl">
-                    <Alert.Indicator />
-                    <Alert.Content>
-                      <Alert.Title>삭제 실패</Alert.Title>
-                      <Alert.Description>{deleteError}</Alert.Description>
-                    </Alert.Content>
-                  </Alert.Root>
-                ) : null}
-
-                <HStack justify="space-between" wrap="wrap" gap="3">
-                  <Text fontSize="sm" color="gray.500">
-                    수정일 {formatDateTime(selectedBanner.updatedAt)}
-                  </Text>
-                  <HStack>
-                    <Button
-                      variant="outline"
-                      colorPalette="red"
-                      onClick={handleDelete}
-                      loading={isDeletePending}
-                    >
-                      삭제
-                    </Button>
-                    <Button
-                      colorPalette="orange"
-                      onClick={handleUpdate}
-                      loading={isEditPending}
-                      disabled={
-                        !isEditDirty ||
-                        Boolean(editValidationError) ||
-                        isEditImageUploading
-                      }
-                    >
-                      저장
-                    </Button>
-                  </HStack>
-                </HStack>
+                <TwoColumnGrid>
+                  <FormField label="노출 시작 시각"><Input type="datetime-local" value={editForm.displayStartAt} onChange={(event) => updateEditForm("displayStartAt", event.target.value)} /></FormField>
+                  <FormField label="노출 종료 시각"><Input type="datetime-local" value={editForm.displayEndAt} onChange={(event) => updateEditForm("displayEndAt", event.target.value)} /></FormField>
+                </TwoColumnGrid>
+                {editForm.imageUrl ? <div className="relative h-[180px] overflow-hidden rounded-xl"><Image src={editForm.imageUrl} alt={selectedBanner.titleLabel} fill className="object-cover" /></div> : null}
+                {editSuccess ? <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>저장 완료</AlertTitle><AlertDescription>{editSuccess}</AlertDescription></Alert> : null}
+                {editError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>저장 실패</AlertTitle><AlertDescription>{editError}</AlertDescription></Alert> : null}
+                {deleteError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>삭제 실패</AlertTitle><AlertDescription>{deleteError}</AlertDescription></Alert> : null}
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-muted-foreground">수정일 {formatDateTime(selectedBanner.updatedAt)}</p>
+                  <InlineGroup>
+                    <Button variant="outline" onClick={handleDelete} disabled={isDeletePending}>{isDeletePending ? "삭제 중..." : "삭제"}</Button>
+                    <Button onClick={handleUpdate} disabled={!isEditDirty || Boolean(editValidationError) || isEditImageUploading || isEditPending}>{isEditPending ? "저장 중..." : "저장"}</Button>
+                  </InlineGroup>
+                </div>
               </>
             ) : (
-              <Box
-                rounded="2xl"
-                borderWidth="1px"
-                borderStyle="dashed"
-                borderColor="blackAlpha.200"
-                p="8"
-                textAlign="center"
-              >
-                <Text>수정할 배너를 먼저 선택해주세요.</Text>
-              </Box>
+              <div className="rounded-2xl border border-dashed p-8 text-center"><p>수정할 배너를 먼저 선택해주세요.</p></div>
             )}
-          </Card.Body>
-        </Card.Root>
-      </Grid>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card.Root>
-        <Card.Header>
-          <HStack justify="space-between" align="center" wrap="wrap" gap="3">
-            <Heading size="md">배너 목록 및 순서</Heading>
-            <HStack>
-              <Button
-                variant="outline"
-                onClick={() => setRefreshKey((current) => current + 1)}
-              >
-                새로고침
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle>배너 목록 및 순서</CardTitle>
+            <InlineGroup>
+              <Button variant="outline" onClick={() => setRefreshKey((current) => current + 1)}>새로고침</Button>
+              <Button onClick={handleSaveOrder} disabled={!isOrderDirty || isOrderPending}>
+                <MoveVertical className="mr-2 h-4 w-4" />
+                {isOrderPending ? "순서 저장 중..." : "순서 저장"}
               </Button>
-              <Button
-                colorPalette="orange"
-                onClick={handleSaveOrder}
-                loading={isOrderPending}
-                disabled={!isOrderDirty}
-              >
-                순서 저장
-              </Button>
-            </HStack>
-          </HStack>
-        </Card.Header>
-        <Card.Body gap="4">
-          {orderSuccess ? (
-            <Alert.Root status="success" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>순서 저장 완료</Alert.Title>
-                <Alert.Description>{orderSuccess}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
-          ) : null}
+            </InlineGroup>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {orderSuccess ? <Alert><CheckCircle2 className="h-4 w-4" /><AlertTitle>순서 저장 완료</AlertTitle><AlertDescription>{orderSuccess}</AlertDescription></Alert> : null}
+          {orderError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>순서 저장 실패</AlertTitle><AlertDescription>{orderError}</AlertDescription></Alert> : null}
 
-          {orderError ? (
-            <Alert.Root status="error" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>순서 저장 실패</Alert.Title>
-                <Alert.Description>{orderError}</Alert.Description>
-              </Alert.Content>
-            </Alert.Root>
-          ) : null}
-
-          <Box overflowX="auto">
-            <Table.Root size="sm">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeader>순서</Table.ColumnHeader>
-                  <Table.ColumnHeader>배너</Table.ColumnHeader>
-                  <Table.ColumnHeader>액션</Table.ColumnHeader>
-                  <Table.ColumnHeader>활성</Table.ColumnHeader>
-                  <Table.ColumnHeader textAlign="end">정렬</Table.ColumnHeader>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>순서</TableHead>
+                  <TableHead>배너</TableHead>
+                  <TableHead>액션</TableHead>
+                  <TableHead>활성</TableHead>
+                  <TableHead className="text-right">정렬</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((banner, index) => {
                   const active = banner.id === selectedBanner?.id;
                   return (
-                    <Table.Row
-                      key={banner.id}
-                      bg={active ? "orange.50" : undefined}
-                      cursor="pointer"
-                      onClick={() => setSelectedBannerId(banner.id)}
-                      _hover={{ bg: active ? "orange.100" : "blackAlpha.50" }}
-                      _dark={{
-                        bg: active ? "orange.950" : undefined,
-                        _hover: {
-                          bg: active ? "orange.900" : "whiteAlpha.100",
-                        },
-                      }}
-                    >
-                      <Table.Cell>#{index + 1}</Table.Cell>
-                      <Table.Cell>
-                        <Stack gap="1">
-                          <Text fontWeight="600">{banner.titleLabel}</Text>
-                          <Text fontSize="sm" color="gray.500">
-                            {banner.badgeLabel} · {banner.buttonLabel}
-                          </Text>
-                        </Stack>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Text>{banner.actionType}</Text>
-                        <Text fontSize="sm" color="gray.500">
-                          {banner.actionTarget || banner.actionUrl || "-"}
-                        </Text>
-                      </Table.Cell>
-                      <Table.Cell>
-                        <Badge colorPalette={banner.isActive ? "green" : "gray"}>
-                          {banner.isActive ? "ACTIVE" : "INACTIVE"}
-                        </Badge>
-                      </Table.Cell>
-                      <Table.Cell textAlign="end">
-                        <HStack justify="flex-end">
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleMoveBanner(banner.id, "up");
-                            }}
-                            disabled={index === 0}
-                          >
-                            위로
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleMoveBanner(banner.id, "down");
-                            }}
-                            disabled={index === items.length - 1}
-                          >
-                            아래로
-                          </Button>
-                        </HStack>
-                      </Table.Cell>
-                    </Table.Row>
+                    <TableRow key={banner.id} className={active ? "cursor-pointer bg-muted/40" : "cursor-pointer"} onClick={() => setSelectedBannerId(banner.id)}>
+                      <TableCell>#{index + 1}</TableCell>
+                      <TableCell><div className="space-y-1"><p className="font-semibold">{banner.titleLabel}</p><p className="text-sm text-muted-foreground">{banner.badgeLabel} · {banner.buttonLabel}</p></div></TableCell>
+                      <TableCell><p>{banner.actionType}</p><p className="text-sm text-muted-foreground">{banner.actionTarget || banner.actionUrl || "-"}</p></TableCell>
+                      <TableCell><Badge className={banner.isActive ? "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300" : "border border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300"}>{banner.isActive ? "ACTIVE" : "INACTIVE"}</Badge></TableCell>
+                      <TableCell className="text-right">
+                        <InlineGroup className="justify-end">
+                          <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleMoveBanner(banner.id, "up"); }} disabled={index === 0}>위로</Button>
+                          <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); handleMoveBanner(banner.id, "down"); }} disabled={index === items.length - 1}>아래로</Button>
+                        </InlineGroup>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </Table.Body>
-            </Table.Root>
-          </Box>
-        </Card.Body>
-      </Card.Root>
-    </Stack>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </PageStack>
   );
 }
