@@ -4,7 +4,26 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import { LogOut, ShieldCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  BellRing,
+  CalendarDays,
+  CarTaxiFront,
+  FileText,
+  GraduationCap,
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+  MessageCircleMore,
+  MessageSquareText,
+  MessagesSquare,
+  School,
+  ShieldAlert,
+  ShieldCheck,
+  Smartphone,
+  Soup,
+  Users,
+} from "lucide-react";
 import { useAuth } from "@/features/auth/auth-context";
 import { ColorModeButton } from "@/components/ui/color-mode";
 import { getAdminSections } from "@/lib/admin/modules";
@@ -49,6 +68,26 @@ function getInitial(value?: string | null) {
 
   return value.trim().charAt(0).toUpperCase();
 }
+
+const moduleIcons: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  users: Users,
+  parties: CarTaxiFront,
+  chatRooms: MessagesSquare,
+  boards: MessageSquareText,
+  notices: School,
+  appNotices: BellRing,
+  campusBanners: Megaphone,
+  appVersions: Smartphone,
+  legalDocuments: FileText,
+  cafeteria: Soup,
+  academicSchedules: CalendarDays,
+  courses: GraduationCap,
+  inquiries: MessageCircleMore,
+  reports: ShieldAlert,
+  minecraft: ShieldAlert,
+  default: FileText,
+};
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const { loading, isAdminVerified, authError, signOutUser, memberProfile } =
@@ -103,7 +142,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader className="gap-4 px-3 py-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-sidebar-border bg-sidebar-accent/40 px-3 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
             <Avatar className="size-10 rounded-2xl">
               <AvatarImage src={memberProfile?.photoUrl ?? undefined} />
               <AvatarFallback className="rounded-2xl">
@@ -132,6 +171,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 <SidebarMenu>
                   {section.modules.map((module) => {
                     const active = pathname === module.path;
+                    const Icon = moduleIcons[module.key] ?? moduleIcons.default;
 
                     return (
                       <SidebarMenuItem key={module.key}>
@@ -141,6 +181,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                           tooltip={module.navigationLabel}
                         >
                           <Link href={module.path}>
+                            <Icon />
                             <span>{module.navigationLabel}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -153,7 +194,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           ))}
         </SidebarContent>
 
-        <SidebarFooter className="gap-2 border-t border-sidebar-border px-3 py-4">
+        <SidebarFooter className="gap-2 border-t border-sidebar-border px-3 py-4 group-data-[collapsible=icon]:items-center">
           <div className="flex items-center gap-2">
             <ColorModeButton />
             <Button

@@ -240,7 +240,7 @@ export function MemberDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-5xl overflow-hidden p-0">
+      <DialogContent className="max-h-[85vh] overflow-hidden p-0 sm:max-w-6xl">
         <DialogHeader className="border-b px-6 pt-6">
           <DialogTitle>{dialogMemberLabel}</DialogTitle>
           <DialogDescription>

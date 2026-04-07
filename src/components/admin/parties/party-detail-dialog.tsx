@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertCircle, Send, ShieldX, Users } from "lucide-react";
+import { AlertCircle, RefreshCcw, Send, ShieldX, Users } from "lucide-react";
+import { ChatMessageFeed } from "@/components/admin/chat/message-feed";
 import { DetailField } from "@/components/admin/detail-field";
 import { SectionAlert } from "@/components/admin/section-alert";
 import { SelectField } from "@/components/admin/users/select-field";
@@ -36,6 +37,7 @@ import type {
   AdminPartyJoinRequest,
   AdminPartyStatusAction,
   AdminPartySummary,
+  ChatMessage,
 } from "@/features/admin/types";
 import { formatDateTime } from "@/lib/format/date";
 
@@ -61,11 +63,18 @@ interface PartyDetailDialogProps {
   systemMessagePending: boolean;
   systemMessageError: string | null;
   systemMessageSuccess: string | null;
+  messages: ChatMessage[];
+  messagesLoading: boolean;
+  messagesError: string | null;
+  messagesHasNext: boolean;
+  loadingMoreMessages: boolean;
   onSelectedActionChange: (value: AdminPartyStatusAction | "") => void;
   onSystemMessageChange: (value: string) => void;
   onStatusAction: () => void;
   onRemoveMember: (memberId: string, nickname: string | null) => void | Promise<void>;
   onSendSystemMessage: () => void;
+  onLoadMoreMessages: () => void | Promise<void>;
+  onRefreshMessages: () => void;
 }
 
 export function PartyDetailDialog({
@@ -90,11 +99,18 @@ export function PartyDetailDialog({
   systemMessagePending,
   systemMessageError,
   systemMessageSuccess,
+  messages,
+  messagesLoading,
+  messagesError,
+  messagesHasNext,
+  loadingMoreMessages,
   onSelectedActionChange,
   onSystemMessageChange,
   onStatusAction,
   onRemoveMember,
   onSendSystemMessage,
+  onLoadMoreMessages,
+  onRefreshMessages,
 }: PartyDetailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,8 +122,8 @@ export function PartyDetailDialog({
               "택시 파티 상세"}
           </DialogTitle>
           <DialogDescription>
-            상세 조회, 상태 변경, 일반 멤버 강퇴, 운영 시스템 메시지, pending join
-            request 조회까지 이 modal에서 처리합니다.
+            상세 조회, 채팅 이력 확인, 상태 변경, 일반 멤버 강퇴, 운영 시스템
+            메시지, pending join request 조회까지 이 modal에서 처리합니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -487,6 +503,54 @@ export function PartyDetailDialog({
                   <p className="text-sm text-muted-foreground">
                     현재 대기 중인 join request가 없습니다.
                   </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <CardTitle>파티 채팅 이력</CardTitle>
+                    <CardDescription>
+                      관리자 전용 read API로 현재 파티 멤버십 없이도 메시지 이력을 조회합니다.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={!selectedPartyDetail?.chatRoomId}
+                    onClick={onRefreshMessages}
+                  >
+                    <RefreshCcw className="size-4" />
+                    메시지 새로고침
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!selectedPartyDetail ? (
+                  <p className="text-sm text-muted-foreground">
+                    파티 상세를 선택하세요.
+                  </p>
+                ) : !selectedPartyDetail.chatRoomId ? (
+                  <Alert>
+                    <AlertCircle className="size-4" />
+                    <AlertTitle>채팅방 없음</AlertTitle>
+                    <AlertDescription>
+                      이 파티는 chat room이 없어 메시지 이력을 조회할 수 없습니다.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <ChatMessageFeed
+                    messages={messages}
+                    loading={messagesLoading}
+                    error={messagesError}
+                    emptyLabel="표시할 파티 채팅 메시지가 없습니다."
+                    loadingLabel="파티 채팅 메시지를 불러오는 중입니다."
+                    hasNext={messagesHasNext}
+                    loadingMore={loadingMoreMessages}
+                    onLoadMore={onLoadMoreMessages}
+                  />
                 )}
               </CardContent>
             </Card>

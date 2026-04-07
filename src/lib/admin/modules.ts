@@ -54,10 +54,11 @@ export const adminModules: AdminModule[] = [
     section: "개요",
     status: "partial",
     summary:
-      "관리자 목록/상세/상태 변경과 일반 멤버 강퇴, 시스템 메시지, pending join request 조회까지 연결됐습니다.",
+      "관리자 목록/상세/상태 변경과 일반 멤버 강퇴, 시스템 메시지, pending join request, 파티 채팅 이력 조회까지 연결됐습니다.",
     availableApis: [
       "GET /v1/admin/parties",
       "GET /v1/admin/parties/{partyId}",
+      "GET /v1/admin/parties/{partyId}/messages",
       "PATCH /v1/admin/parties/{partyId}/status",
       "DELETE /v1/admin/parties/{partyId}/members/{memberId}",
       "POST /v1/admin/parties/{partyId}/messages/system",
@@ -77,18 +78,15 @@ export const adminModules: AdminModule[] = [
     section: "커뮤니티",
     status: "partial",
     summary:
-      "목록/상세/메시지 조회와 관리자 생성/삭제, 참여/나가기는 가능하지만 멤버 관리와 운영 액션은 부족합니다.",
+      "관리자 전용 목록/상세/메시지 조회와 관리자 생성/삭제를 운영할 수 있고, 멤버 관리와 운영 액션은 아직 부족합니다.",
     availableApis: [
-      "GET /v1/chat-rooms",
-      "GET /v1/chat-rooms/{chatRoomId}",
-      "POST /v1/chat-rooms/{chatRoomId}/join",
-      "DELETE /v1/chat-rooms/{chatRoomId}/members/me",
-      "GET /v1/chat-rooms/{chatRoomId}/messages",
+      "GET /v1/admin/chat-rooms",
+      "GET /v1/admin/chat-rooms/{chatRoomId}",
+      "GET /v1/admin/chat-rooms/{chatRoomId}/messages",
       "POST /v1/admin/chat-rooms",
       "DELETE /v1/admin/chat-rooms/{chatRoomId}",
     ],
     gapApis: [
-      "GET /v1/admin/chat-rooms",
       "GET /v1/admin/chat-rooms/{chatRoomId}/members",
       "DELETE /v1/admin/chat-rooms/{chatRoomId}/members/{memberId}",
     ],

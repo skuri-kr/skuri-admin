@@ -33,6 +33,8 @@ import type {
   AdminPartySummary,
   AdminPartySystemMessageResponse,
   ApiResponse,
+  ChatMessage,
+  ChatMessagePage,
   PageResponse,
 } from "@/features/admin/types";
 import { useAuth } from "@/features/auth/auth-context";
@@ -41,6 +43,8 @@ import { ApiError } from "@/lib/api/http";
 import { getApiBaseUrl } from "@/lib/env/public-env";
 import { formatDateTime } from "@/lib/format/date";
 import { useEffect, useMemo, useState } from "react";
+
+const defaultMessagePageSize = 20;
 
 export default function PartiesPage() {
   const { user, isAdminVerified } = useAuth();
@@ -69,6 +73,17 @@ export default function PartiesPage() {
   const [joinRequests, setJoinRequests] = useState<AdminPartyJoinRequest[]>([]);
   const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
   const [joinRequestsError, setJoinRequestsError] = useState<string | null>(null);
+  const [messageRefreshKey, setMessageRefreshKey] = useState(0);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
+  const [messagesHasNext, setMessagesHasNext] = useState(false);
+  const [messagesNextCursorCreatedAt, setMessagesNextCursorCreatedAt] =
+    useState<string | null>(null);
+  const [messagesNextCursorId, setMessagesNextCursorId] = useState<string | null>(
+    null,
+  );
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
 
   const [selectedAction, setSelectedAction] = useState<AdminPartyStatusAction | "">("");
   const [actionPending, setActionPending] = useState(false);
@@ -161,6 +176,12 @@ export default function PartiesPage() {
       setJoinRequests([]);
       setJoinRequestsLoading(false);
       setJoinRequestsError(null);
+      setMessages([]);
+      setMessagesLoading(false);
+      setMessagesError(null);
+      setMessagesHasNext(false);
+      setMessagesNextCursorCreatedAt(null);
+      setMessagesNextCursorId(null);
       return;
     }
 
@@ -200,6 +221,82 @@ export default function PartiesPage() {
 
     return () => controller.abort();
   }, [detailRefreshKey, isAdminVerified, isPartyDialogOpen, selectedPartyId, user]);
+
+  useEffect(() => {
+    if (!user || !isAdminVerified || !selectedPartyId || !isPartyDialogOpen) {
+      setMessages([]);
+      setMessagesLoading(false);
+      setMessagesError(null);
+      setMessagesHasNext(false);
+      setMessagesNextCursorCreatedAt(null);
+      setMessagesNextCursorId(null);
+      return;
+    }
+
+    if (detailLoading) {
+      return;
+    }
+
+    if (selectedPartyDetail && !selectedPartyDetail.chatRoomId) {
+      setMessages([]);
+      setMessagesLoading(false);
+      setMessagesError(null);
+      setMessagesHasNext(false);
+      setMessagesNextCursorCreatedAt(null);
+      setMessagesNextCursorId(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadMessages = async () => {
+      setMessagesLoading(true);
+      setMessagesError(null);
+
+      try {
+        const params = new URLSearchParams({
+          size: String(defaultMessagePageSize),
+        });
+        const response = await getAuthorizedJson<ApiResponse<ChatMessagePage>>(
+          user,
+          `${getApiBaseUrl()}/v1/admin/parties/${selectedPartyId}/messages?${params.toString()}`,
+          { signal: controller.signal },
+        );
+
+        if (!controller.signal.aborted) {
+          setMessages(response.data.messages);
+          setMessagesHasNext(response.data.hasNext);
+          setMessagesNextCursorCreatedAt(response.data.nextCursor?.createdAt ?? null);
+          setMessagesNextCursorId(response.data.nextCursor?.id ?? null);
+        }
+      } catch (caughtError) {
+        if (!controller.signal.aborted) {
+          setMessages([]);
+          setMessagesError(
+            caughtError instanceof ApiError
+              ? caughtError.message
+              : "파티 채팅 메시지를 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setMessagesLoading(false);
+        }
+      }
+    };
+
+    void loadMessages();
+
+    return () => controller.abort();
+  }, [
+    detailLoading,
+    isAdminVerified,
+    isPartyDialogOpen,
+    messageRefreshKey,
+    selectedPartyDetail,
+    selectedPartyId,
+    user,
+  ]);
 
   useEffect(() => {
     if (!user || !isAdminVerified || !selectedPartyId || !isPartyDialogOpen) {
@@ -451,6 +548,7 @@ export default function PartiesPage() {
           response.data.createdAt,
         )})`,
       );
+      setMessageRefreshKey((current) => current + 1);
     } catch (caughtError) {
       setSystemMessageError(
         caughtError instanceof ApiError
@@ -459,6 +557,46 @@ export default function PartiesPage() {
       );
     } finally {
       setSystemMessagePending(false);
+    }
+  };
+
+  const handleLoadMoreMessages = async () => {
+    if (
+      !user ||
+      !selectedPartyId ||
+      !messagesHasNext ||
+      !messagesNextCursorCreatedAt ||
+      !messagesNextCursorId
+    ) {
+      return;
+    }
+
+    setLoadingMoreMessages(true);
+    setMessagesError(null);
+
+    try {
+      const params = new URLSearchParams({
+        size: String(defaultMessagePageSize),
+        cursorCreatedAt: messagesNextCursorCreatedAt,
+        cursorId: messagesNextCursorId,
+      });
+      const response = await getAuthorizedJson<ApiResponse<ChatMessagePage>>(
+        user,
+        `${getApiBaseUrl()}/v1/admin/parties/${selectedPartyId}/messages?${params.toString()}`,
+      );
+
+      setMessages((current) => [...current, ...response.data.messages]);
+      setMessagesHasNext(response.data.hasNext);
+      setMessagesNextCursorCreatedAt(response.data.nextCursor?.createdAt ?? null);
+      setMessagesNextCursorId(response.data.nextCursor?.id ?? null);
+    } catch (caughtError) {
+      setMessagesError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "이전 파티 채팅 메시지를 불러오지 못했습니다.",
+      );
+    } finally {
+      setLoadingMoreMessages(false);
     }
   };
 
@@ -476,7 +614,7 @@ export default function PartiesPage() {
           <h1 className="text-3xl font-semibold tracking-tight">택시 파티 관리</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
             관리자용 목록, 상세, 상태 변경에 이어 일반 멤버 강퇴, 운영 시스템
-            메시지, pending join request 조회까지 현재 Spring Admin API에 맞춰
+            메시지, pending join request 조회, 파티 채팅 이력 조회까지 현재 Spring Admin API에 맞춰
             연결한 화면입니다.
           </p>
         </div>
@@ -568,6 +706,13 @@ export default function PartiesPage() {
         onStatusAction={handleStatusAction}
         onRemoveMember={handleRemoveMember}
         onSendSystemMessage={handleSendSystemMessage}
+        messages={messages}
+        messagesLoading={messagesLoading}
+        messagesError={messagesError}
+        messagesHasNext={messagesHasNext}
+        loadingMoreMessages={loadingMoreMessages}
+        onLoadMoreMessages={handleLoadMoreMessages}
+        onRefreshMessages={() => setMessageRefreshKey((current) => current + 1)}
       />
     </div>
   );
