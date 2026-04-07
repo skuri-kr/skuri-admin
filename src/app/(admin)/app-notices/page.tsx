@@ -690,6 +690,7 @@ export default function AppNoticesPage() {
                           alt={`생성할 앱 공지 이미지 ${index + 1}`}
                           fill
                           className="object-cover"
+                          unoptimized
                         />
                       </div>
                       <Button
@@ -865,6 +866,7 @@ export default function AppNoticesPage() {
                               alt={`앱 공지 이미지 ${index + 1}`}
                               fill
                               className="object-cover"
+                              unoptimized
                             />
                           </div>
                           <Button
@@ -1032,6 +1034,7 @@ export default function AppNoticesPage() {
                                 alt={`${notice.title} 대표 이미지`}
                                 fill
                                 className="object-cover"
+                                unoptimized
                               />
                             </div>
                             <p className="text-sm">{notice.imageUrls.length}개</p>
