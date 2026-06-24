@@ -134,22 +134,26 @@ P1에서 실제 제공되는 `PATCH /status` action:
 
 현재 상태:
 
+- 2026-04-06 기준 backend에서 관리자 공개 채팅방 read API와 관리자 파티 채팅 read API가 구현됐다.
 - `GET /v1/chat-rooms`
 - `GET /v1/chat-rooms/{chatRoomId}`
 - `POST /v1/chat-rooms/{chatRoomId}/join`
 - `DELETE /v1/chat-rooms/{chatRoomId}/members/me`
 - `GET /v1/chat-rooms/{chatRoomId}/messages`
+- `GET /v1/admin/chat-rooms`
+- `GET /v1/admin/chat-rooms/{chatRoomId}`
+- `GET /v1/admin/chat-rooms/{chatRoomId}/messages`
 - `POST /v1/admin/chat-rooms`
 - `DELETE /v1/admin/chat-rooms/{chatRoomId}`
+- `GET /v1/admin/parties/{partyId}/messages`
 
-즉, 목록/상세/메시지 조회와 생성/삭제, 참여/나가기까지는 가능하다.
-하지만 운영에 필요한 멤버 관리와 시스템 액션은 없다.
+즉, 운영 화면에서 필요한 공개 채팅방 전체 목록/상세/메시지 조회와 파티 채팅 이력 조회까지는 가능하다.
+남은 gap은 멤버 관리와 공지성 운영 액션 중심이다.
 
 추가 필요 API:
 
 | 우선순위 | 제안 API | 목적 |
 |---|---|---|
-| P1 | `GET /v1/admin/chat-rooms` | 관리자 전용 필터/검색 포함 목록 |
 | P1 | `GET /v1/admin/chat-rooms/{chatRoomId}/members` | 멤버 목록 조회 |
 | P2 | `DELETE /v1/admin/chat-rooms/{chatRoomId}/members/{memberId}` | 관리자 강제 퇴장 |
 | P2 | `POST /v1/admin/chat-rooms/{chatRoomId}/messages/system` | 운영 공지/경고 메시지 |

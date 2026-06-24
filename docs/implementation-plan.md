@@ -101,7 +101,7 @@
 | `/dashboard` | 운영 요약 대시보드 | KPI 카드 + 활동 그래프 + 최근 운영 피드 구현 |
 | `/users` | 회원 목록/상세/활동 요약/권한 변경 | 부분 구현 |
 | `/parties` | 택시 파티 운영 조회/개입 | 부분 구현 |
-| `/chat-rooms` | 공개 채팅방 목록/상세/참여/메시지 운영 | 부분 구현 |
+| `/chat-rooms` | 공개 채팅방 목록/상세/메시지 운영 + 관리자 생성/삭제 | 부분 구현 |
 | `/boards` | 게시글/댓글 운영 | 부분 구현 |
 | `/notices` | 학교 공지 목록/상세 + sync 진입 | 부분 구현 |
 | `/app-notices` | 앱 공지 관리 | 부분 구현 |
@@ -134,7 +134,7 @@
 | 신고 | `GET /v1/admin/reports`, `PATCH /v1/admin/reports/{id}/status` |
 | 대시보드 read model | `GET /v1/admin/dashboard/summary`, `GET /v1/admin/dashboard/activity`, `GET /v1/admin/dashboard/recent-items` |
 | 사용자 관리(P1) | `GET /v1/admin/members`, `GET /v1/admin/members/{memberId}`, `GET /v1/admin/members/{memberId}/activity`, `PATCH /v1/admin/members/{memberId}/admin-role` |
-| 택시 파티 관리 | `GET /v1/admin/parties`, `GET /v1/admin/parties/{partyId}`, `PATCH /v1/admin/parties/{partyId}/status`, `DELETE /v1/admin/parties/{partyId}/members/{memberId}`, `POST /v1/admin/parties/{partyId}/messages/system`, `GET /v1/admin/parties/{partyId}/join-requests` |
+| 택시 파티 관리 | `GET /v1/admin/parties`, `GET /v1/admin/parties/{partyId}`, `GET /v1/admin/parties/{partyId}/messages`, `PATCH /v1/admin/parties/{partyId}/status`, `DELETE /v1/admin/parties/{partyId}/members/{memberId}`, `POST /v1/admin/parties/{partyId}/messages/system`, `GET /v1/admin/parties/{partyId}/join-requests` |
 | 게시물 관리(P1) | `GET /v1/admin/posts`, `GET /v1/admin/posts/{postId}`, `PATCH /v1/admin/posts/{postId}/moderation`, `GET /v1/admin/comments`, `PATCH /v1/admin/comments/{commentId}/moderation` |
 
 ### 6.2 부분 구현 가능한 영역
@@ -145,7 +145,7 @@
 |---|---|---|
 | 택시 파티 관리 | 목록/필터/상세 조회, 상태 변경(`CLOSE/REOPEN/CANCEL/END`), 일반 멤버 강퇴, 운영 시스템 메시지, 관리자 join request 조회 | 관리자 join request 승인/거절, 리더 교체/승계, 시스템 메시지 pin |
 | 게시물 관리 | 게시글 목록/상세 조회, 게시글 moderation(`VISIBLE/HIDDEN/DELETED`), 댓글 목록/댓글 moderation | 신고 연계 운영 뷰(`GET /v1/admin/posts/{postId}/reports`), pin 정책 |
-| 공개 채팅방 관리 | `GET /v1/chat-rooms`, `GET /v1/chat-rooms/{id}`, `GET /v1/chat-rooms/{id}/messages`, `POST/DELETE /v1/admin/chat-rooms*` | 멤버 목록, 관리자 강퇴, 공지성 시스템 메시지 발송, 운영 필터 |
+| 공개 채팅방 관리 | `GET /v1/admin/chat-rooms`, `GET /v1/admin/chat-rooms/{id}`, `GET /v1/admin/chat-rooms/{id}/messages`, `POST/DELETE /v1/admin/chat-rooms*` | 멤버 목록, 관리자 강퇴, 공지성 시스템 메시지 발송, 고급 검색/운영 필터 |
 | 학교 공지 운영 | 공지 목록/상세 조회, sync 실행 | sync 이력, 수동 숨김/핀/카테고리 보정 같은 운영 액션 |
 | 대시보드 | summary/activity/recent-items read API로 KPI 카드, 활동 그래프, 최근 운영 피드 구현 가능 | ACTIVE-only 회원 수, 학교 공지 sync 이력 같은 추가 운영 지표는 별도 API 논의 필요 |
 
@@ -313,7 +313,8 @@ src/
 
 - 목록/상세/메시지 이력 조회
 - 관리자 채팅방 생성/삭제
-- 참여/나가기 액션 연결
+- 관리자 전체 공개방 조회(`PARTY` 제외, membership 불필요)
+- 파티 상세에서 관리자 파티 채팅 메시지 조회
 - 멤버/운영 액션은 placeholder
 
 ### 8.5 게시물 관리
