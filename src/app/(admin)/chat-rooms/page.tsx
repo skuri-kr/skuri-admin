@@ -22,6 +22,11 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +60,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type {
+  AdminChatRoomMember,
   AdminCreateChatRoomResponse,
   ApiResponse,
   ChatMessage,
@@ -96,6 +102,29 @@ function InfoField({
   );
 }
 
+function getRoomMemberDisplayName(member: AdminChatRoomMember) {
+  return (
+    member.nickname?.trim() ||
+    member.realname?.trim() ||
+    member.email?.trim() ||
+    member.memberId
+  );
+}
+
+function getRoomMemberAvatarFallback(member: AdminChatRoomMember) {
+  return getRoomMemberDisplayName(member).slice(0, 2).toUpperCase();
+}
+
+function memberStatusBadgeClass(status: AdminChatRoomMember["status"]) {
+  switch (status) {
+    case "ACTIVE":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300";
+    case "WITHDRAWN":
+      return "border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950/50 dark:text-zinc-300";
+    default:
+      return "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-300";
+  }
+}
 
 export default function ChatRoomsPage() {
   const { user, isAdminVerified } = useAuth();
@@ -119,6 +148,9 @@ export default function ChatRoomsPage() {
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<ChatRoomDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [roomMembers, setRoomMembers] = useState<AdminChatRoomMember[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   const [messageRefreshKey, setMessageRefreshKey] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -240,6 +272,51 @@ export default function ChatRoomsPage() {
     };
 
     void loadRoomDetail();
+
+    return () => controller.abort();
+  }, [isAdminVerified, isRoomDialogOpen, selectedRoomId, user]);
+
+  useEffect(() => {
+    if (!user || !isAdminVerified || !selectedRoomId || !isRoomDialogOpen) {
+      setRoomMembers([]);
+      setMembersLoading(false);
+      setMembersError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const loadRoomMembers = async () => {
+      setMembersLoading(true);
+      setMembersError(null);
+
+      try {
+        const response = await getAuthorizedJson<ApiResponse<AdminChatRoomMember[]>>(
+          user,
+          `${getApiBaseUrl()}/v1/admin/chat-rooms/${selectedRoomId}/members`,
+          { signal: controller.signal },
+        );
+
+        if (!controller.signal.aborted) {
+          setRoomMembers(response.data);
+        }
+      } catch (caughtError) {
+        if (!controller.signal.aborted) {
+          setRoomMembers([]);
+          setMembersError(
+            caughtError instanceof ApiError
+              ? caughtError.message
+              : "채팅방 멤버 목록을 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setMembersLoading(false);
+        }
+      }
+    };
+
+    void loadRoomMembers();
 
     return () => controller.abort();
   }, [isAdminVerified, isRoomDialogOpen, selectedRoomId, user]);
@@ -404,6 +481,7 @@ export default function ChatRoomsPage() {
       setIsRoomDialogOpen(false);
       setSelectedRoomId(null);
       setSelectedRoomDetail(null);
+      setRoomMembers([]);
       setMessages([]);
       setRefreshKey((current) => current + 1);
       setCreateSuccess(`채팅방 ${selectedRoomDetail.name}을(를) 삭제했습니다.`);
@@ -707,8 +785,8 @@ export default function ChatRoomsPage() {
           <Info className="h-4 w-4" />
           <AlertTitle>남은 백엔드 gap</AlertTitle>
           <AlertDescription>
-            관리자 공개 채팅방 멤버 목록, 강제 퇴장, 운영 시스템 메시지 API는 여전히
-            후속 범위입니다.
+            관리자 공개 채팅방 멤버 강제 퇴장, 운영 시스템 메시지 API는 여전히 후속
+            범위입니다.
           </AlertDescription>
         </Alert>
 
@@ -788,6 +866,114 @@ export default function ChatRoomsPage() {
                         <p className="whitespace-pre-wrap text-sm">
                           {formatText(selectedRoomDetail.description)}
                         </p>
+                      </InfoField>
+
+                      <InfoField label="참여 멤버">
+                        {membersLoading ? (
+                          <p className="text-sm text-muted-foreground">
+                            채팅방 멤버를 불러오는 중입니다.
+                          </p>
+                        ) : membersError ? (
+                          <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>멤버 조회 실패</AlertTitle>
+                            <AlertDescription>{membersError}</AlertDescription>
+                          </Alert>
+                        ) : roomMembers.length ? (
+                          <div className="overflow-hidden rounded-lg border">
+                            <div className="max-h-80 overflow-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>멤버</TableHead>
+                                    <TableHead>소속</TableHead>
+                                    <TableHead>참여 정보</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {roomMembers.map((member) => {
+                                    const displayName = getRoomMemberDisplayName(member);
+
+                                    return (
+                                      <TableRow key={member.memberId}>
+                                        <TableCell className="min-w-[260px] whitespace-normal">
+                                          <div className="flex items-start gap-3">
+                                            <Avatar size="sm" className="mt-0.5">
+                                              <AvatarImage
+                                                src={member.photoUrl ?? undefined}
+                                                alt={displayName}
+                                              />
+                                              <AvatarFallback>
+                                                {getRoomMemberAvatarFallback(member)}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <div className="min-w-0 space-y-1">
+                                              <p className="font-medium">{displayName}</p>
+                                              {member.realname &&
+                                              member.realname !== displayName ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                  이름 {member.realname}
+                                                </p>
+                                              ) : null}
+                                              <p className="break-all text-xs text-muted-foreground">
+                                                {member.memberId}
+                                              </p>
+                                              <p className="break-all text-xs text-muted-foreground">
+                                                {formatText(member.email)}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="whitespace-normal">
+                                          <div className="space-y-1">
+                                            <p className="text-sm">
+                                              {formatText(member.department)}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              학번 {formatText(member.studentId)}
+                                            </p>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="min-w-[220px] whitespace-normal">
+                                          <div className="space-y-2">
+                                            <p className="text-xs text-muted-foreground">
+                                              참여 {formatDateTime(member.joinedAt)}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                              마지막 읽음 {formatDateTime(member.lastReadAt)}
+                                            </p>
+                                            <InlineGroup>
+                                              <Badge
+                                                variant="outline"
+                                                className={
+                                                  member.muted
+                                                    ? "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/50 dark:text-orange-300"
+                                                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                                }
+                                              >
+                                                {member.muted ? "음소거" : "알림 허용"}
+                                              </Badge>
+                                              <Badge
+                                                variant="outline"
+                                                className={memberStatusBadgeClass(member.status)}
+                                              >
+                                                {member.status ?? "회원 정보 없음"}
+                                              </Badge>
+                                            </InlineGroup>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            참여 중인 멤버가 없습니다.
+                          </p>
+                        )}
                       </InfoField>
 
                       <InfoField label="마지막 메시지">

@@ -78,16 +78,16 @@ export const adminModules: AdminModule[] = [
     section: "커뮤니티",
     status: "partial",
     summary:
-      "관리자 전용 목록/상세/메시지 조회와 관리자 생성/삭제를 운영할 수 있고, 멤버 관리와 운영 액션은 아직 부족합니다.",
+      "관리자 전용 목록/상세/멤버/메시지 조회와 관리자 생성/삭제를 운영할 수 있고, 멤버 운영 액션은 아직 부족합니다.",
     availableApis: [
       "GET /v1/admin/chat-rooms",
       "GET /v1/admin/chat-rooms/{chatRoomId}",
+      "GET /v1/admin/chat-rooms/{chatRoomId}/members",
       "GET /v1/admin/chat-rooms/{chatRoomId}/messages",
       "POST /v1/admin/chat-rooms",
       "DELETE /v1/admin/chat-rooms/{chatRoomId}",
     ],
     gapApis: [
-      "GET /v1/admin/chat-rooms/{chatRoomId}/members",
       "DELETE /v1/admin/chat-rooms/{chatRoomId}/members/{memberId}",
     ],
   },
