@@ -258,6 +258,20 @@ export interface ChatRoomDetail extends ChatRoomSummary {
   lastReadAt: string | null;
 }
 
+export interface AdminChatRoomMember {
+  memberId: string;
+  email: string | null;
+  nickname: string | null;
+  realname: string | null;
+  studentId: string | null;
+  department: string | null;
+  photoUrl: string | null;
+  joinedAt: string;
+  lastReadAt: string | null;
+  muted: boolean;
+  status: AdminMemberStatus | null;
+}
+
 export interface ChatAccountData {
   bankName: string;
   accountNumber: string;
